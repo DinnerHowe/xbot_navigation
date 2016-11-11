@@ -51,7 +51,8 @@ class BaseController:
   rospy.Subscriber('%s'%self.PlanTopic, Path, self.PlanCB)
   rospy.Timer(rospy.Duration(self.PublishFrequency), self.PublishCB)
   rospy.Timer(rospy.Duration(self.PublishFrequency*100), self.LogCB)
-  rospy.Subscriber('/move_base/current_goal', PoseStamped, self.GoalCB)
+  #rospy.Subscriber('/move_base/current_goal', PoseStamped, self.GoalCB)
+  rospy.Subscriber('/clicked_point', PointStamped, self.GoalCB)
   #rospy.Subscriber('%s'%self.ScanTopic, Path, self.ScanCB)
   rospy.spin()
   
@@ -133,6 +134,8 @@ class BaseController:
   
   self.CurrentGoal = None
   
+  self.GoalUpdate = False
+  
  def LogCB(self, e):
   #with self.locker:
   self.Arrivedplog = True
@@ -155,71 +158,83 @@ class BaseController:
   
      
  def PublishCB(self, event):
-  #with self.locker:   
-  cmd_vel = rospy.Publisher(self.MotionTopice , Twist, queue_size=1)
-  cmd = copy.deepcopy(self.commands.get())
-  print 'PublishCB cmd: ' ,cmd
+  with self.locker:   
+   cmd_vel = rospy.Publisher(self.MotionTopice , Twist, queue_size=1)
+   cmd = copy.deepcopy(self.commands.get())
+   print 'PublishCB cmd: ' ,cmd
   
-  if round(cmd.linear.x, 2) != 0.0:
-   if abs(cmd.linear.x) > self.MaxLinearSP:
-    cmd.linear.x = self.MaxLinearSP * (cmd.linear.x / abs(cmd.linear.x))
-   if abs(cmd.linear.x) < self.MinLinearSP:
-    cmd.linear.x = self.MinLinearSP * (cmd.linear.x / abs(cmd.linear.x))
-  if round(cmd.angular.z) != 0.0:
-   if abs(cmd.angular.z) > self.MaxAngularSP:
-    cmd.angular.z = self.MaxAngularSP * (cmd.angular.z / abs(cmd.angular.z))
-   if abs(cmd.angular.z) < self.MinAngularSP:
-    cmd.angular.z = self.MinAngularSP * (cmd.angular.z / abs(cmd.angular.z))
+   if round(cmd.linear.x, 2) != 0.0:
+    if abs(cmd.linear.x) > self.MaxLinearSP:
+     cmd.linear.x = self.MaxLinearSP * (cmd.linear.x / abs(cmd.linear.x))
+    if abs(cmd.linear.x) < self.MinLinearSP:
+     cmd.linear.x = self.MinLinearSP * (cmd.linear.x / abs(cmd.linear.x))
+   if round(cmd.angular.z) != 0.0:
+    if abs(cmd.angular.z) > self.MaxAngularSP:
+     cmd.angular.z = self.MaxAngularSP * (cmd.angular.z / abs(cmd.angular.z))
+    if abs(cmd.angular.z) < self.MinAngularSP:
+     cmd.angular.z = self.MinAngularSP * (cmd.angular.z / abs(cmd.angular.z))
    
-  self.LastSpeed = cmd
-  cmd_vel.publish(cmd)
+   self.LastSpeed = cmd
+   cmd_vel.publish(cmd)
 
 
  def GoalCB(self, goal):
   #with self.locker:
   self.CurrentGoal = PointStamped()
-  self.CurrentGoal.point = goal.pose.position
+  self.CurrentGoal.point = goal.point
   self.CurrentGoal.header.seq = goal.header.seq
   self.CurrentGoal.header.frame_id = goal.header.frame_id
+  self.GoalUpdate = True
 
 
  def PlanCB(self, PlanPath):
   self.path = []
-  #self.path = copy.deepcopy(PlanPath.poses)
-  
-  # check if plan start from current position if yes copy path, otherwise set new goal
-  if self.PositionCheck(PlanPath.poses[0], self.CurrentOdom):    
-   self.path = copy.deepcopy(PlanPath.poses)
-   print 'PositionCheck pass', len(self.path)
-   self.Hold = False
+  #with self.locker:
+  if len(PlanPath.poses) > 0:
+   self.path = self.Pathhandle(PlanPath)
+   
+
+ def Pathhandle(self, PlanPath):
+  Pathdb = list()
+  if not self.GoalUpdate:
+   Pathdb = PlanPath.poses
+   self.GoalUpdate = False
+   return Pathdb
   else:
-   if len(PlanPath.poses) > 0:
-    new_goal = PointStamped()
-    OriGoal = PointStamped()
-    new_goal.point = PlanPath.poses[0].pose.position
-    new_goal.header.seq = PlanPath.header.seq
-    new_goal.header.frame_id = 'map'
-    rospy.loginfo('publish new goal')
-    #print len(PlanPath.poses)
-    self.PubGoal(new_goal)
-    #self.Goals.put(new_goal)
-    
-    if self.CurrentGoal != None:
-     #OriGoal.point = self.CurrentGoal.pose.position
-     #OriGoal.header.seq = self.CurrentGoal.header.seq
-     #OriGoal.header.frame_id = self.CurrentGoal.header.frame_id
-     OriGoal = copy.deepcopy(self.CurrentGoal)
-     self.Goals.put(OriGoal)
-    else:
-     OriGoal.point = PlanPath.poses[-1].pose.position
-     OriGoal.header.seq = PlanPath.header.seq
-     OriGoal.header.frame_id = 'map'
-     self.PubGoal(OriGoal)
-     #self.Goals.put(OriGoal)
+   # check if plan start from current position if yes copy path, otherwise set new goal
+   if self.PositionCheck(PlanPath.poses[0], self.CurrentOdom):    
+    Pathdb = PlanPath.poses
+    print 'PositionCheck pass', len(Pathdb)
+    self.Hold = False
    else:
-    rospy.loginfo('No plan coming')
+    self.Hold = True
+    if len(PlanPath.poses) > 0:
+     new_goal = PointStamped()
+     OriGoal = PointStamped()
+     new_goal.point = PlanPath.poses[0].pose.position
+     new_goal.header.seq = PlanPath.header.seq
+     new_goal.header.frame_id = 'map'
+     rospy.loginfo('publish new goal')
+     print len(PlanPath.poses)
+     self.PubGoal(new_goal)
+     #self.Goals.put(new_goal)
     
-   self.Hold = True
+     if self.CurrentGoal != None:
+      #OriGoal.point = self.CurrentGoal.pose.position
+      #OriGoal.header.seq = self.CurrentGoal.header.seq
+      #OriGoal.header.frame_id = self.CurrentGoal.header.frame_id
+      OriGoal = copy.deepcopy(self.CurrentGoal)
+      self.Goals.put(OriGoal)
+     else:
+      OriGoal.point = PlanPath.poses[-1].pose.position
+      OriGoal.header.seq = PlanPath.header.seq
+      OriGoal.header.frame_id = 'map'
+      self.PubGoal(OriGoal)
+      #self.Goals.put(OriGoal)
+    else:
+     rospy.loginfo('No plan coming')
+   return Pathdb
+
 
    
  def PubGoal(self, new_goal):
@@ -246,19 +261,19 @@ class BaseController:
    self.CurrentOdom = odom
    self.num = 10
    cmd = Twist()
+   print 'odom: len path ', len(self.path)
    if self.path != []:
-    path = copy.deepcopy(self.path)
     if len(self.path) > self.num :
-     cmd = self.DiffControl(odom, path[self.num].pose, path, cmd) 
+     cmd = self.DiffControl(odom, self.path[self.num].pose, self.path, cmd) 
     else: # situation of len(self.path) < self.num
-     if not self.ArrivedPosition(odom, path):
+     if not self.ArrivedPosition(odom, self.path):
       if self.Arrivedplog:
        self.Arrivedplog = False
        #rospy.loginfo('OdomCB: robot not in goal position ')
-      cmd = self.GTP(odom, path[-1].pose, len(path), cmd) 
+      cmd = self.GTP(odom, self.path[-1].pose, len(self.path), cmd) 
      else:
       #rospy.loginfo('OdomCB: robot in goal position ')
-      cmd = self.GetOrientation(odom, path)
+      cmd = self.GetOrientation(odom, self.path)
      
     if not cmd == Twist():
      self.commands.put(cmd)
