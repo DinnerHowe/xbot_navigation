@@ -14,17 +14,15 @@ This program is free software; you can redistribute it and/or modify
 This programm is tested on kuboki base turtlebot. 
 """
 
-from geometry_msgs.msg import Point
 import PyKDL
 import numpy
-import copy
 
 def GetAngle(quat):
  rot = PyKDL.Rotation.Quaternion(quat.x, quat.y, quat.z, quat.w)
  return rot.GetRPY()[2]
 
 
-def GoalOrientation(self, theta):
+def GoalOrientation(theta):
  orientation = Quaternion() 
   
  if -numpy.pi < theta < -numpy.pi*2.0/3.0:
@@ -36,6 +34,41 @@ def GoalOrientation(self, theta):
   orientation.w = numpy.cos(theta/2.0)
    
  return orientation
+
+
+# 产生一个朝向当前目标点的角度
+def angle_generater(sub_point, pre_point):
+ if sub_point.y - pre_point.y > 0:
+  if sub_point.x < pre_point.x:
+   # print 'sub_point.y-pre_point.y>0 && sub_point.x<pre_point.x'
+   angle = math.pi - abs(math.atan((sub_point.y - pre_point.y) / (sub_point.x - pre_point.x)))
+  if sub_point.x == pre_point.x:
+   # print 'sub_point.y-pre_point.y>0 && sub_point.x==pre_point.x'
+   angle = math.pi / 2
+  if sub_point.x > pre_point.x:
+   # print 'sub_point.y-pre_point.y>0 && sub_point.x==sub_point.x>pre_point.x'
+   angle = math.atan((sub_point.y - pre_point.y) / (sub_point.x - pre_point.x))
+
+ if sub_point.y - pre_point.y < 0:
+  if sub_point.x < pre_point.x:
+   # print 'sub_point.y-pre_point.y<0 && sub_point.x<pre_point.x'
+   angle = -(math.pi - abs(math.atan((sub_point.y - pre_point.y) / (sub_point.x - pre_point.x))))
+  if sub_point.x == pre_point.x:
+   # print 'sub_point.y-pre_point.y<0 && sub_point.x==pre_point.x'
+   angle = -math.pi / 2
+  if sub_point.x > pre_point.x:
+   # print 'sub_point.y-pre_point.y<0 && sub_point.x>pre_point.x'
+   angle = -abs(math.atan((sub_point.y - pre_point.y) / (sub_point.x - pre_point.x)))
+
+ if sub_point.y - pre_point.y == 0:
+  if sub_point.x > pre_point.x:
+   # print 'sub_point.y-pre_point.y==0 && sub_point.x>pre_point.x'
+   angle = 0.0
+  if sub_point.x < pre_point.x:
+   # print 'sub_point.y-pre_point.y==0 && sub_point.x<pre_point.x'
+   angle = math.pi
+
+ return angle
 
 
 class SLF:
