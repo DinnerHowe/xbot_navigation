@@ -10,7 +10,7 @@
  <arg name="custom_param_file" default="$(find nav_staff)/param/dummy.yaml"/>
  <arg name="recovery_behavior_enabled" default='false' />
  <arg name="clearing_rotation_allowed" default='false' />
- <arg name="planner_frequency" default='1.0' />
+ <arg name="planner_frequency" default='10.0' />
 
 
  <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
