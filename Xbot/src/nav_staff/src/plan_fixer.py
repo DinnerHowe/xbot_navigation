@@ -67,32 +67,40 @@ class PlanFixer():
 
     def RawPathCB(self, data):
         with self.locker:
-            self.seq = data.header.seq
-            path = data.poses
-            if self.Fixer_Thread:
-                if len(path) <= 3:
-                    if not self.Store_Goal.empty():
-                        goal = self.Store_Goal.get()
-                        self.RestoreGoal(goal)
-                        self.Fixer_Thread = False
-                    else:
-                        rospy.loginfo('没有在储目标')
-                        self.PubFixPlan(data)
-                else:
-                    rospy.loginfo('发布修正路径')
-                    self.PubFixPlan(data)
+            try:
+                self.PathHandle(data)
+            except:
+                rospy.loginfo('waiting for odom data...')
 
+    def PathHandle(self, data):
+        self.seq = data.header.seq
+        path = data.poses
+        if self.Fixer_Thread:
+            if len(path) <= 3:
+                if not self.Store_Goal.empty():
+                    goal = self.Store_Goal.get()
+                    self.RestoreGoal(goal)
+                    self.Fixer_Thread = False
+                else:
+                    rospy.loginfo('没有在储目标')
+                    self.PubFixPlan(data)
             else:
-                origin = path[0].pose.position
-                # 判断是否起始点为路径规划起始点
-                #RawOdom = rospy.wait_for_message(self.OdomTopic, Pose)
-                OdomData = self.odom
-                if self.OriginCheck(origin, OdomData):
+                rospy.loginfo('发布修正路径')
+                self.PubFixPlan(data)
+
+        else:
+            origin = path[0].pose.position
+            # 判断是否起始点为路径规划起始点
+            # RawOdom = rospy.wait_for_message(self.OdomTopic, Pose)
+            OdomData = self.odom
+            if self.OriginCheck(origin, OdomData):
+                if len(data.poses) > 3:
+                    #print len(data.poses)
                     rospy.loginfo('发布原始路径')
                     self.PubFixPlan(data)
-                else:
-                    rospy.loginfo('执行fixer中...')
-                    self.Fixer(data)
+            else:
+                rospy.loginfo('执行fixer中...')
+                self.Fixer(data)
 
 
     def RestoreGoal(self, data):
