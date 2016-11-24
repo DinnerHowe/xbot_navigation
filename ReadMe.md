@@ -27,6 +27,7 @@ OR
 5. rosrun nav_staff keyboard_control.py
 6. rosrun simulation tele_handle_for_rviz.py
 7. rosrun nav_staff base_controller.py
+8. rosrun nav_staff plan_fixer.py
 测试：
 8. rosrun nav_staff Plantest.py #testing plan
 

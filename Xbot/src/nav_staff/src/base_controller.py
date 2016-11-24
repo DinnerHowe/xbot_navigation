@@ -11,15 +11,14 @@ This programm is tested on kuboki base turtlebot.
 
 """
 import rospy
-from geometry_msgs.msg import Twist
-from nav_msgs.msg import Path
-from geometry_msgs.msg import Pose
 import numpy
-from geometry_msgs.msg import Quaternion
 import copy
 import CVlib
 import Queue
-
+from nav_msgs.msg import Path
+from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Pose
+from geometry_msgs.msg import Quaternion
 
 
 class ClearParams:
@@ -42,8 +41,8 @@ class ClearParams:
 class BaseController:
     def __init__(self):
         self.define()
-        rospy.Subscriber('%s' % self.OdomTopic, Pose, self.OdomCB)
-        rospy.Subscriber('%s' % self.PlanTopic, Path, self.PlanCB)
+        rospy.Subscriber(self.OdomTopic, Pose, self.OdomCB)
+        rospy.Subscriber(self.PlanTopic, Path, self.PlanCB)
         rospy.Timer(self.period, self.PubcmdCB)
         rospy.spin()
 
@@ -51,7 +50,7 @@ class BaseController:
 
         # parameters
         if not rospy.has_param('~PlanTopic'):
-            rospy.set_param('~PlanTopic', '/move_base/NavfnROS/plan')
+            rospy.set_param('~PlanTopic', '/move_base/action_plan')
         self.PlanTopic = rospy.get_param('~PlanTopic')
 
         if not rospy.has_param('~OdomTopic'):
@@ -106,8 +105,10 @@ class BaseController:
         self.period = rospy.Duration(self.PublishFrequency)
 
     def OdomCB(self, odom):
-        self.num = 10  # int( 0.2 * len(self.path))
-        #print 'path: ', len(self.path), self.num
+        self.num = 10
+        #PlanPath = rospy.wait_for_message(self.PlanTopic, Path)
+        #self.path = PlanPath.poses
+        #print 'path: ', len(path), self.num
         cmd = Twist()
         if self.path != []:
             if len(self.path) > self.num:
