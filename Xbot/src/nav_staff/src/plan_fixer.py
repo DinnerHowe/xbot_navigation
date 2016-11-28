@@ -144,7 +144,7 @@ class PlanFixer():
             return True
 
 if __name__=='__main__':
-    rospy.init_node('Plantest')
+    rospy.init_node('Planfixer')
     try:
         rospy.loginfo( "initialization system")
         PlanFixer()

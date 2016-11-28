@@ -121,7 +121,7 @@ class Plantest():
   
   
  def PlanCB(self, PlanPath):
-  print '############/\n', PlanPath.poses[0]
+  #print '############/\n', PlanPath.poses[0]
   self.path = []
   self.path = copy.deepcopy(PlanPath.poses)
   self.num = 10 
@@ -177,7 +177,7 @@ class Plantest():
   FrontLine = CVlib.SLF()
   result = FrontLine.OLS(Front)
   
-  print 'StraightLine length: ', num, 'path length: ', len(self.path)
+  #print 'StraightLine length: ', num, 'path length: ', len(self.path)
   #print result
   
   if len(self.path) < 2*num:
