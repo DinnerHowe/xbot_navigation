@@ -16,7 +16,7 @@ class JPS():
         self.define()
 
     def define(self):
-        
+
 
 class A_Star():
     def __init__(self, end, start):
