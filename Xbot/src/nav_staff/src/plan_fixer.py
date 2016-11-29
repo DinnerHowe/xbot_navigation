@@ -42,7 +42,7 @@ class PlanFixer():
         if not rospy.has_param('~PlanTopic'):
             rospy.set_param('~PlanTopic', '/move_base/NavfnROS/plan')
         if not rospy.has_param('~OdomTopic'):
-            rospy.set_param('~OdomTopic', '/turtlebot_position_in_map')
+            rospy.set_param('~OdomTopic', '/robot_position_in_map')
         if not rospy.has_param('~PositionFree'):
          rospy.set_param('~PositionFree', 0.5)
         if not rospy.has_param('~ActionPlanTopic'):

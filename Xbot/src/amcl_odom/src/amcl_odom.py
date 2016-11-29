@@ -43,7 +43,7 @@ class amcl_odom():
   
  def define(self):
   self.listener=tf.TransformListener()
-  self.odom_pub=rospy.Publisher("turtlebot_position_in_map", Pose, queue_size=1)
+  self.odom_pub=rospy.Publisher("robot_position_in_map", Pose, queue_size=1)
   self.odom=PoseWithCovarianceStamped()
   self.pose=Pose()
   

@@ -54,7 +54,7 @@ class BaseController:
         self.PlanTopic = rospy.get_param('~PlanTopic')
 
         if not rospy.has_param('~OdomTopic'):
-            rospy.set_param('~OdomTopic', '/turtlebot_position_in_map')
+            rospy.set_param('~OdomTopic', '/robot_position_in_map')
         self.OdomTopic = rospy.get_param('~OdomTopic')
 
         if not rospy.has_param('~MotionTopice'):

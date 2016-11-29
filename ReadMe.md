@@ -25,7 +25,7 @@ OR
 3. roslaunch machine robot_controller_single.launch
 4. roslaunch machine 3D_RVIZ.launch
 5. rosrun nav_staff keyboard_control.py
-6. rosrun simulation tele_handle_for_rviz.py
+6. launch simulation tele_handle_for_rviz.py
 7. rosrun nav_staff base_controller.py
 8. rosrun nav_staff plan_fixer.py
 测试：

@@ -26,7 +26,7 @@ import CVlib
 class Plantest():
  def __init__(self):
   self.define()
-  rospy.Subscriber('/turtlebot_position_in_map', Pose, self.OdomCB)
+  rospy.Subscriber('/robot_position_in_map', Pose, self.OdomCB)
   rospy.Subscriber('%s'%self.PlanTopic, Path, self.PlanCB)
   rospy.spin()
   
