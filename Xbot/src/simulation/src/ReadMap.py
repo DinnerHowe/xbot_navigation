@@ -14,12 +14,10 @@ import yaml
 from nav_msgs.msg import OccupancyGrid 
 import Image
 import copy
-from geometry_msgs.msg import Pose
 from threading import Lock
 import maplib
 from geometry_msgs.msg import PoseArray
-from std_msgs.msg import String
-from nav_msgs.msg import MapMetaData 
+from nav_msgs.msg import MapMetaData
 from nav_msgs.srv import *
 from geometry_msgs.msg import Quaternion
 
@@ -75,8 +73,7 @@ class grid_map():
     self.map_pub.publish(self.Map)
    self.PubMetadata()
    #print maplib.get_effective_point(self.Map)[1]
-  
-  
+
  def PubMetadata(self): 
   self.map_metadata.publish(self.Map.info)
   

@@ -16,6 +16,7 @@ import Queue
 from geometry_msgs.msg import PointStamped
 from geometry_msgs.msg import Pose
 from nav_msgs.msg import Path
+from nav_msgs.msg import OccupancyGrid
 from threading import Lock
 
 class ClearParams:
@@ -32,6 +33,7 @@ class Planner():
   self.define()
   rospy.Subscriber(self.GoalTopic, PointStamped, self.GoalCB)
   rospy.Subscriber(self.OdomTopic, Pose, self.OdomCB)
+  rospy.Subscriber(self.MapTopic, OccupancyGrid, self.MapCB)
   rospy.Timer(self.period, self.PubPlanCB)
   rospy.spin()
 
@@ -42,10 +44,13 @@ class Planner():
   with self.locker:
    self.PlanHandle(data, self.odom)
 
+ def MapCB(self, data):
+  self.mapdata = data
+
  def PlanHandle(self, end, start):
   plan = Path()
   plan.header = end.header
-  plan.poses = PlanAlgrithmsLib.JPS(end, start)
+  plan.poses = PlanAlgrithmsLib.AlgrithmsLib.JPS(end, start, self.mapdata)
   self.plans.put(plan)
 
 
@@ -62,6 +67,10 @@ class Planner():
   if not rospy.has_param('~GoalTopic'):
    rospy.set_param('~GoalTopic', '/clicked_point')
   self.GoalTopic = rospy.get_param('~GoalTopic')
+
+  if not rospy.has_param('~MapTopic'):
+   rospy.set_param('~MapTopic', '/map')
+  self.MapTopic = rospy.get_param('~MapTopic')
 
   if not rospy.has_param('~PlanTopic'):
    rospy.set_param('~PlanTopic', '/move_base/action_plan')

@@ -10,30 +10,32 @@ This program is free software; you can redistribute it and/or modify
 This programm is tested on kuboki base turtlebot.
 
 """
+import metrics
 
 class JPS():
-    def __init__(self, end, start):
-        self.define()
+    def __init__(self, end, start, mapdata):
+        self.define(mapdata)
 
-    def define(self):
+    def define(self, mapdata):
+        self.map_data = metrics
 
 
 class A_Star():
-    def __init__(self, end, start):
+    def __init__(self, end, start, mapdata):
         self.define()
 
     def define(self):
         pass
 
 class D_Star():
-    def __init__(self, end, start):
+    def __init__(self, end, start, mapdata):
         self.define()
 
     def define(self):
         pass
 
 class Dijkstar():
-    def __init__(self, end, start):
+    def __init__(self, end, start, mapdata):
         self.define()
 
     def define(self):

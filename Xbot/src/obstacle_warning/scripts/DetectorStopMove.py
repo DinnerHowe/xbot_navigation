@@ -109,7 +109,7 @@ class laser_point():
   self.define()
   self.map_data()
   rospy.Subscriber('/scan', LaserScan, self.laser_cb)
-  rospy.Subscriber('/turtlebot_position_in_map',Pose,self.pose_cb)
+  rospy.Subscriber('/robot_position_in_map',Pose,self.pose_cb)
   rospy.Subscriber('/move_base/status', GoalStatusArray, self.status_callback)
   rospy.Subscriber('/clicked_point' ,PointStamped, self.goal_cb)
   rospy.spin()
@@ -177,8 +177,7 @@ class laser_point():
   color.a=1.0
   
   self.laser_points_marker = self.visual_test(LaserData, Marker.POINTS, color, scale)
-  
- 
+
  #地图区域划分 
  def geohash(self, data, width, height, map_origin):
   (X,Y)=(1,1)
@@ -196,7 +195,6 @@ class laser_point():
   #test_data=[test_point]
   #self._map_divide_store(width, height, test_data, map_origin.position, pose_mean, (X,Y))
  ############################################
- 
  
  #地图划分区域存储 
  def _map_divide_store(self, width, height, data, map_origin, pose_mean, (X,Y)):
@@ -475,6 +473,7 @@ class laser_point():
     return    
      
  #查询值 
+
  def read(self, root, i):
   #rospy.loginfo('checking the map')
   if i.x<root['pose_mean'].x and i.y>=root['pose_mean'].y:#WN 的条件
@@ -527,8 +526,6 @@ class laser_point():
    
   else:
    rospy.loginfo('查询值  error point not in position')
-   
-
   
  def pose_cb(self,data):
   self.pose=data
@@ -545,7 +542,6 @@ class laser_point():
    rospy.logerr('unknow error during pub laser_points_marker and staticarea_pub')
    pass
 
-  
  def laser_cb(self,data):
   # scan duration 0.3
   if self.feedback=='recieved':
@@ -595,7 +591,6 @@ class laser_point():
     if self.result: #判断是否在误差许可之内为地图上已知点 
      rospy.loginfo( '判断是否在误差许可之内为地图上已知点' )
      self.TryEscape(max_y,max_x)
-
 
  def TryEscape(self,max_y,max_x):
   rospy.loginfo( 'obstacle detected' )
@@ -654,7 +649,6 @@ class laser_point():
    self.stop_flag.publish('stop')
    self.pubStopMess.publish(self.stop)
    self.addFlag()
-
    
  def Escaping(self,EscGoal,OriGoal):
   
@@ -672,6 +666,7 @@ class laser_point():
    rospy.loginfo('robot restored goal')
 
 #检查镭射是否为地图上的静态障碍物（eg，wall door etc.）
+
  def check(self,data,particles):
   trigger=0
   if len(data)<particles:
@@ -694,6 +689,7 @@ class laser_point():
     return True
 
 # 视觉显示检测结果
+
  def visual_test(self,data,Type,color,scale):#data=[point1,point2,point3...]###################visual_test
 #plot POINTS
   #print len(data),data[0],data[1]
@@ -754,8 +750,7 @@ class laser_point():
    flag_marker.pose = data
    flag_marker.pose.position.z = self.flag_height
    return flag_marker
-   
-   
+
  def Q2A(self,quat):
   rot = PyKDL.Rotation.Quaternion(quat[0], quat[1], quat[2], quat[3])
   return rot.GetRPY()[2]
@@ -818,8 +813,7 @@ class laser_point():
     self.stop_base.cancel_all_goals()
     self.stop_flag.publish('stop')
     self.pubStopMess.publish(self.stop)
- 
- 
+
  def goal_cb(self,data):
   self.current_goal=data
   self.stop_base.cancel_all_goals()
