@@ -17,6 +17,7 @@ import getpass
 import copy
 from sensor_msgs.msg  import LaserScan
 from nav_msgs.msg import Odometry
+import signal
 
 class PlayBag():
     def __init__(self):
@@ -28,32 +29,29 @@ class PlayBag():
 
     def Pub_Fack_Topic(self, bag):
         for topic, msg, time in bag.read_messages(topics=['/scan', '/odom']):
-            try:
-                print '00000000000000000000000000'
-                seq = 0
-                if topic == '/scan':
-                    pub = rospy.Publisher(topic, LaserScan, queue_size=1)
-                    self.laser_seq +=1
-                    seq = self.laser_seq
-                    data = copy.deepcopy(msg)
+            rospy.sleep(1 / self.frequency)
+            seq = 0
+            if topic == '/scan':
+                pub = rospy.Publisher(topic, LaserScan, queue_size=1)
+                self.laser_seq +=1
+                seq = self.laser_seq
+                data = copy.deepcopy(msg)
 
-                if topic == '/odom':
-                    pub = rospy.Publisher(topic, Odometry, queue_size=1)
-                    self.odom_seq += 1
-                    seq = self.odom_seq
-                    data = copy.deepcopy(msg)
+            if topic == '/odom':
+                pub = rospy.Publisher(topic, Odometry, queue_size=1)
+                self.odom_seq += 1
+                seq = self.odom_seq
+                data = copy.deepcopy(msg)
 
-                data.header.seq = seq
-                data.header.stamp = rospy.Time.now()
-                pub.publish(data)
-                rospy.sleep(1 / self.frequency)
+            data.header.seq = seq
+            data.header.stamp = rospy.Time.now()
+            pub.publish(data)
+            rospy.loginfo('publishing data...')
+            signal.signal(signal.SIGINT, self.Break)
 
-        ################## 打断有问题 #################
-            except (KeyboardInterrupt, SystemExit):
-                print '1111111111111111111111111s'
-                rospy.loginfo('KeyboardInterrupt')
-                raise
-
+    def Break(self, signal, frame):
+        rospy.loginfo('KeyBoardInterruption')
+        raise
 
     def debug_ReadBag(self, bag):
         topic_info = bag.get_type_and_topic_info()
@@ -74,7 +72,7 @@ class PlayBag():
         self.path = '/home/%s/%s/src/bags/'%(usr_name, WorkSpaces) + self.bag_name
         self.odom_seq = 0
         self.laser_seq = 0
-        self.frequency = 1 #hz
+        self.frequency = 10 #hz
 
 if __name__=='__main__':
     rospy.init_node('play_bag')
