@@ -14,30 +14,67 @@ This programm is tested on kuboki base turtlebot.
 import rospy
 import rosbag
 import getpass
+import copy
+from sensor_msgs.msg  import LaserScan
+from nav_msgs.msg import Odometry
 
 class PlayBag():
     def __init__(self):
         self.define()
-        self.ReadBag()
-
-    def ReadBag(self):
         bag = rosbag.Bag(self.path)
-        a = bag.get_type_and_topic_info()
-        print a
+        #debug
+        #self.debug_ReadBag(bag)
+        self.Pub_Fack_Topic(bag)
+
+    def Pub_Fack_Topic(self, bag):
+        for topic, msg, time in bag.read_messages(topics=['/scan', '/odom']):
+            try:
+                print '00000000000000000000000000'
+                seq = 0
+                if topic == '/scan':
+                    pub = rospy.Publisher(topic, LaserScan, queue_size=1)
+                    self.laser_seq +=1
+                    seq = self.laser_seq
+                    data = copy.deepcopy(msg)
+
+                if topic == '/odom':
+                    pub = rospy.Publisher(topic, Odometry, queue_size=1)
+                    self.odom_seq += 1
+                    seq = self.odom_seq
+                    data = copy.deepcopy(msg)
+
+                data.header.seq = seq
+                data.header.stamp = rospy.Time.now()
+                pub.publish(data)
+                rospy.sleep(1 / self.frequency)
+
+        ################## 打断有问题 #################
+            except (KeyboardInterrupt, SystemExit):
+                print '1111111111111111111111111s'
+                rospy.loginfo('KeyboardInterrupt')
+                raise
+
+
+    def debug_ReadBag(self, bag):
+        topic_info = bag.get_type_and_topic_info()
+        print 'topic_info', topic_info
         for topic, msg, time in bag.read_messages(topics=['/scan', '/odom']):
             #debug
             debug = raw_input('input ENTER to continue')
+            print 'topic: ', topic
+            print 'msg： ', msg.header
+            #print 'time: ',time
             if debug.lower() == 'q':
                 break
-
 
     def define(self):
         usr_name = getpass.getuser()
         WorkSpaces = 'Xbot'
         self.bag_name = 'amcl.bag'
         self.path = '/home/%s/%s/src/bags/'%(usr_name, WorkSpaces) + self.bag_name
-
-
+        self.odom_seq = 0
+        self.laser_seq = 0
+        self.frequency = 1 #hz
 
 if __name__=='__main__':
     rospy.init_node('play_bag')
