@@ -28,26 +28,44 @@ class PlayBag():
         self.Pub_Fack_Topic(bag)
 
     def Pub_Fack_Topic(self, bag):
+        laser_pub = rospy.Publisher(self.LaserTopic+'_test', LaserScan, queue_size=1)
+        odom_pub = rospy.Publisher(self.OdomTopic+'_test', Odometry, queue_size=1)
+        laser_data = LaserScan()
+        laser_data.header.frame_id = self.laser_frame
+        laser_data.header.seq = 0
+        laser_data.header.stamp = rospy.Time.now()
+
+        odom_data = Odometry()
+        odom_data.header.frame_id = self.odom_frame
+        odom_data.header.seq = 0
+        odom_data.header.stamp = rospy.Time.now()
+
         for topic, msg, time in bag.read_messages(topics=['/scan', '/odom']):
-            rospy.sleep(1 / self.frequency)
-            seq = 0
-            if topic == '/scan':
-                pub = rospy.Publisher(topic, LaserScan, queue_size=1)
+            rospy.sleep(1.0 / self.frequency)
+            if topic == self.LaserTopic:
                 self.laser_seq +=1
-                seq = self.laser_seq
-                data = copy.deepcopy(msg)
-
-            if topic == '/odom':
-                pub = rospy.Publisher(topic, Odometry, queue_size=1)
+                if msg.header.frame_id != self.laser_frame:
+                    msg.header.frame_id = self.laser_frame
+                laser_data = copy.deepcopy(msg)
+            if topic == self.OdomTopic:
                 self.odom_seq += 1
-                seq = self.odom_seq
-                data = copy.deepcopy(msg)
+                #if msg.header.frame_id != self.odom_frame:
+                    #msg.header.frame_id = self.odom_frame
+                odom_data = copy.deepcopy(msg)
 
-            data.header.seq = seq
-            data.header.stamp = rospy.Time.now()
-            pub.publish(data)
+            self.pub(laser_data, self.laser_seq, laser_pub)
+            self.pub(odom_data, self.odom_seq, odom_pub)
+            #self.dbug()
             rospy.loginfo('publishing data...')
             signal.signal(signal.SIGINT, self.Break)
+
+    def dbug(self):
+        raw_input('press ENTER to continu')
+
+    def pub(self, data, seq, pub):
+        data.header.seq = seq
+        data.header.stamp = rospy.Time.now()
+        pub.publish(data)
 
     def Break(self, signal, frame):
         rospy.loginfo('KeyBoardInterruption')
@@ -72,7 +90,12 @@ class PlayBag():
         self.path = '/home/%s/%s/src/bags/'%(usr_name, WorkSpaces) + self.bag_name
         self.odom_seq = 0
         self.laser_seq = 0
-        self.frequency = 10 #hz
+        self.frequency = 90 #hz
+        self.OdomTopic = '/odom'
+        self.LaserTopic = '/scan'
+        self.laser_frame = 'camera_depth_frame'
+        self.odom_frame = 'odom'
+
 
 if __name__=='__main__':
     rospy.init_node('play_bag')
