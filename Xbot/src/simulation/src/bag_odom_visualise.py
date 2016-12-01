@@ -14,7 +14,7 @@ This programm is tested on kuboki base turtlebot.
 import rospy
 from nav_msgs.msg import Odometry
 from visualization_msgs.msg import Marker
-
+from geometry_msgs.msg import PoseWithCovarianceStamped
 
 class bag_odom_visual():
     def __init__(self):
@@ -24,6 +24,14 @@ class bag_odom_visual():
 
     def OdomCB(self, data):
         self.visualiser(data.pose.pose)
+        self.amcl_pose(data)
+
+    def amcl_pose(self, data):
+        pub = rospy.Publisher('amcl_pose', PoseWithCovarianceStamped, queue_size=1)
+        robot_pose = PoseWithCovarianceStamped()
+        robot_pose.header = data.header
+        robot_pose.pose = data.pose.pose
+        pub.publish(robot_pose)
 
     def visualiser(self, pose):
         self.marker.pose.position = pose.position
