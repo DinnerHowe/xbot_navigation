@@ -23,7 +23,6 @@ class TF_AMCL():
         rospy.Subscriber('tf', TFMessage, self.TFCB)
         rospy.spin()
 
-
     def TFCB(self, data):
         time = rospy.Time.now() + self.transform_tolerance
         tf_child = self.tf_odom
