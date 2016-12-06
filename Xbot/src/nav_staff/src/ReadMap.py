@@ -37,7 +37,7 @@ class grid_map():
  
  def AMCLMapSever(self):
   with self.locker: 
-   MapServer = rospy.Service('/static_map', GetMap, self.mapCallback)
+   rospy.Service('/static_map', GetMap, self.mapCallback)
   
  def mapCallback(self, req):
   with self.locker: 

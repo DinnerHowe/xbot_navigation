@@ -10,6 +10,14 @@ This program is free software; you can redistribute it and/or modify
 This programm is tested on kuboki base turtlebot.
 
 """
+import rospy
+import socket
+import rosgraph
+import time
+import rosgraph.names
+import rosgraph.network
+from rospy.exceptions import ROSInterruptException
+
 
 def wait_for_service_D(service, timeout = None):
     master = rosgraph.Master(rospy.names.get_caller_id())

@@ -9,7 +9,15 @@
   <arg name="initial_pose_y" default="0.0"/>
   <arg name="initial_pose_a" default="0.0"/>
   
-  <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" />
+  <!--<node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" />-->
+
+  <!-- Run the map server with the desired map -->
+  <node name="map_server" pkg="nav_staff" type="ReadMap.py" >
+   <param name="map_path"   value="$(arg map_path)"/>
+   <param name="map_file"   value="$(arg map_file)"/>
+   <param name="frame_id"   value="$(arg frame_id)"/>
+   <param name="use_map_topic"   value="$(arg use_map_topic)"/>
+  </node>
 
   <!--amcl-->
   <include file="$(find nav_staff)/launch/xml/amcl_xu.launch.xml">
