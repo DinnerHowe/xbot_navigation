@@ -14,7 +14,10 @@ This programm is tested on kuboki base turtlebot.
 """
 import rospy
 from geometry_msgs.msg import PoseWithCovarianceStamped
+from PlanAlgrithmsLib import ServiceLib
 
+
+ServerCheck = False
 
 class AMCL():
     def __init__(self):
@@ -25,9 +28,11 @@ class AMCL():
         rospy.spin()
 
     def RequestMap(self):
-
-        while not rospy.is_shutdown():
+        global ServerCheck
+        while not ServerCheck:
+            ServerCheck = ServiceLib.wait_for_service_D(rospy.Duration(0.5))
             rospy.logwarn('Request for map failed; trying again')
+
 
     def handleInitialPoseMessage(self, data):
 

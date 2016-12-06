@@ -13,4 +13,4 @@ This programm is tested on kuboki base turtlebot.
 import AlgrithmsLib
 import metrics
 
-__all__ = ['AlgrithmsLib', 'map']
+__all__ = ['AlgrithmsLib', 'map', 'ServiceLib']
