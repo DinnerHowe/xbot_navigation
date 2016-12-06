@@ -42,9 +42,6 @@ class AMCL():
         self.HandleMapMessage(response.map)
 
     def HandleMapMessage(self, map_msg):
-        #print '\nmap header:\n', map.header
-        #print 'map info: \n', map.info
-        #print 'map data: ', len(map.data)
         rospy.loginfo('map recieved!')
         rospy.loginfo('map info: %d X %d, pix %3f'%(map.info.width, map.info.height, map.info.resolution))
         map_ = self.ConvertMap(map_msg)
