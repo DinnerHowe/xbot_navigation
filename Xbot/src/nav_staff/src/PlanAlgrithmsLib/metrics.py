@@ -17,7 +17,7 @@ import copy
 
 #返回机器人在地图数据中的data格数[num]
 def Position_Num(info, position):
-    centremap_cell = map_center_cell(info.origin, info.resolution)
+    centremap_cell = Map_Center_Cell(info.origin, info.resolution)
     pose_x = centremap_cell[0]+int(round(position.x / info.resolution))
     pose_y = centremap_cell[1]+int(round(position.y / info.resolution))
     num = pose_y * info.width + pose_x
@@ -27,7 +27,7 @@ def Num_Position(info, num):
     position = Point()
     x = num % info.width
     y = num / info.width
-    centremap_cell = map_center_cell(info.origin, info.resolution)
+    centremap_cell = Map_Center_Cell(info.origin, info.resolution)
     position.x = (x - centremap_cell[0]) * info.resolution
     position.y = (y - centremap_cell[1]) * info.resolution
     return position

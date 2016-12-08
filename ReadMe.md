@@ -26,13 +26,17 @@ OR
 4. roslaunch machine 3D_RVIZ.launch
 5. rosrun nav_staff keyboard_control.py
 6. rosrun simulation tele_handle_for_rviz.py
-7. rosrun nav_staff base_controller.py
-8. rosrun nav_staff plan_fixer.py
+
+以下两个已经合并到 roslaunch simulation fake_amcl.launch中
+  rosrun nav_staff base_controller.py
+  rosrun nav_staff plan_fixer.py
+
 测试：
 8. rosrun nav_staff Plantest.py #testing plan
 
 # new move_base
 1. roslaunch machine xbot_bringup.launch
+   roslaunch machine turtlebot_bringup.launch
 2. roslaunch machine Xbot_amcl.launch
 3. roslaunch machine 3D_RVIZ.launch
 4. rosrun nav_staff init_pose_handle.py

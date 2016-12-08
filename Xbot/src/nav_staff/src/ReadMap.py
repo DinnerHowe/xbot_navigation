@@ -16,10 +16,20 @@ import Image
 import copy
 from threading import Lock
 import maplib
+import getpass
 from geometry_msgs.msg import PoseArray
 from nav_msgs.msg import MapMetaData
 from nav_msgs.srv import *
 from geometry_msgs.msg import Quaternion
+
+
+class ClearParams:
+    def __init__(self):
+        rospy.delete_param('~map_path')
+        rospy.delete_param('~map_file')
+        rospy.delete_param('~frame_id')
+        rospy.delete_param('~use_map_topic')
+        rospy.delete_param('~root_topic')
 
 class grid_map():
  def __init__(self):
@@ -60,7 +70,7 @@ class grid_map():
   with self.locker:
    self.Map.data = copy.deepcopy(self.init_map.data)
    self.map_pub.publish(self.Map)
-   print 'repub' 
+   rospy.loginfo ('update map')
    self.PubMetadata()
    
  def Clear(self,event):
@@ -79,9 +89,12 @@ class grid_map():
   
  def define(self):
   self.locker = Lock()
+  countname = getpass.getuser()
+  workspace = 'Xbot'
+  self.filepath = '/home/%s/%s/src/xbot_navigation/Xbot/src/nav_staff/map/' % (countname, workspace)
 
   if not rospy.has_param('~map_path'):
-   rospy.set_param('~map_path','/home/howe/Xbot/src/nav_staff/map/')
+   rospy.set_param('~map_path', self.filepath)
   
   if not rospy.has_param('~map_file'):
    rospy.set_param('~map_file','5-12.yaml')
@@ -90,15 +103,16 @@ class grid_map():
    rospy.set_param('~frame_id','map')
 
   if not rospy.has_param('~use_map_topic'):
-   rospy.set_param('~use_map_topic','/map')
+   rospy.set_param('~use_map_topic','map_raw')
 
-   
+  if not rospy.has_param('~root_topic'):
+   rospy.set_param('~root_topic','/test_obstacles')
+
   self.origin_orientation = Quaternion()
   self.origin_orientation.w = -1
   
-  self.root_topic='/test_obstacles'
   #self.radiu = numpy.inf
-
+  self.root_topic = rospy.get_param('~root_topic')
   self.filepath = rospy.get_param('~map_path')
   self.filename = rospy.get_param('~map_file')
   self.frame_id = rospy.get_param('~frame_id')
@@ -141,10 +155,7 @@ class grid_map():
      print 1
      Map.data.append(50)
   #print Map.info
-  rospy.loginfo( 'Map read' )
-  
-   
-  
+  rospy.loginfo( 'Map readed' )
   return Map
    
  def ReadYaml(self):
@@ -152,7 +163,7 @@ class grid_map():
    with open(self.filepath + self.filename, 'rb') as f:
     data = yaml.load(f)
   except:
-   rospy.set_param('~map_path','/home/howe/Xbot/src/nav_staff/map/')
+   rospy.set_param('~map_path',self.filepath)
    rospy.set_param('~map_file','5-12.yaml')
    self.ReadYaml()
   image = data['image']
@@ -170,6 +181,7 @@ if __name__=='__main__':
  try:
   rospy.loginfo ("initialization system")
   grid_map()
+  ClearParams()
   rospy.loginfo ("process done and quit")
  except rospy.ROSInterruptException:
   rospy.loginfo("robot twist node terminated.")
