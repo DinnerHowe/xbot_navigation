@@ -44,8 +44,6 @@ class ClearParams:
         rospy.delete_param('~initial_orientation_z')
         rospy.delete_param('~initial_orientation_w')
 
-
-
 class AMCL():
     def __init__(self):
         self.define()
@@ -116,10 +114,8 @@ class AMCL():
                 rospy.loginfo('updating robot initial pose')
                 self.PubPose(init_pose)
 
-
-
-
     def apply_pose(self):
+        #用来update robot position in map
         self.listener.waitForTransform(self.target_frame, self.source_frame, rospy.Time(), rospy.Duration(2))
 
         self.listener.waitForTransform(self.target_frame, self.source_frame, rospy.Time.now(), rospy.Duration(0.01))
@@ -133,16 +129,13 @@ class AMCL():
         self.init_pose.pose.orientation.z += rot[2]
         self.init_pose.pose.orientation.w += rot[3]
 
-
     def PubPose(self, pose_msg):
         pose_msg.header.stamp = rospy.Time.now()
         pub = rospy.Publisher('/set_pose', PoseStamped, queue_size=1)
         pub.publish(pose_msg)
 
-
-
-    #def HandleLaserMessage(self, data):
-        #pass
+    def HandleLaserMessage(self, data):
+        pass
 
     def define(self):
         if not rospy.has_param('~use_map_topic'):

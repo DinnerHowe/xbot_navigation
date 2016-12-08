@@ -14,6 +14,12 @@ from tf2_msgs.msg import TFMessage
 import tf
 from threading import Lock
 
+class ClearParams:
+    def __init__(self):
+        rospy.delete_param('~publish_frequency')
+        rospy.delete_param('~odom_frame_id')
+        rospy.delete_param('~map_frame_id')
+
 class init_pose_test():
  def __init__(self):
      self.define()
@@ -33,7 +39,6 @@ class init_pose_test():
         tf_parent = self.tf_odom
         self.tf_map2odom.sendTransform(self.tf_translation, self.tf_rotation, time, tf_parent, tf_child)
         self.r.sleep()
-
 
  def define(self):
      if not rospy.has_param('~publish_frequency'):
@@ -68,6 +73,7 @@ if __name__=='__main__':
     try:
         rospy.loginfo ("initialization system")
         init_pose_test()
+        ClearParams()
         rospy.loginfo ("process done and quit")
     except rospy.ROSInterruptException:
         rospy.loginfo("robot twist node terminated.")
