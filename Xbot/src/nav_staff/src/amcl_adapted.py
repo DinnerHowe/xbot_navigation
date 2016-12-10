@@ -21,6 +21,9 @@ from sensor_msgs.msg import LaserScan
 import tf
 from geometry_msgs.msg import PoseStamped
 from threading import Lock
+import copy
+from nav_msgs.msg import Odometry
+
 
 ServerCheck = False
 First = True
@@ -50,7 +53,8 @@ class AMCL():
         self.RequestMap()
         rospy.Subscriber(self.InitialposeTopic, PoseWithCovarianceStamped, self.HandleInitialPoseMessage)
         rospy.Subscriber(self.MapTopic, OccupancyGrid, self.HandleMapMessage)
-        #rospy.Subscriber(self.ScanTopic, LaserScan, self.HandleLaserMessage())
+        rospy.Subscriber(self.ScanTopic, LaserScan, self.HandleLaserMessage)
+        rospy.Subscriber(self.OdomTopic, Odometry, self.HandleOdomMessage)
         rospy.spin()
 
     def RequestMap(self):
@@ -70,14 +74,16 @@ class AMCL():
 
     def HandleMapMessage(self, map_msg):
         with Locker:
-            self.map_ = self.ConvertMap(map_msg)
-            self.map_.header = map_msg.header
-            self.map_.header.stamp = rospy.Time.now()
-            self.map_.info.resolution = map_msg.info.resolution
-            self.map_.info.width = map_msg.info.width
-            self.map_.info.height = map_msg.info.height
-            self.map_.info.map_load_time = map_msg.info.map_load_time
-            self.Pubmap(self.map_)
+            self.internal_map = self.ConvertMap(map_msg)
+            # self.internal_map.header = map_msg.header
+            # self.internal_map.header.stamp = rospy.Time.now()
+            # self.internal_map.info.resolution = map_msg.info.resolution
+            # self.internal_map.info.width = map_msg.info.width
+            # self.internal_map.info.height = map_msg.info.height
+            # self.internal_map.info.map_load_time = map_msg.info.map_load_time
+            self.Pubmap(map_msg)
+            self.apply_pose()
+
 
     def Pubmap(self, map_msg):
         pub = rospy.Publisher(self.AmclMapTopic, OccupancyGrid, queue_size=1)
@@ -87,15 +93,16 @@ class AMCL():
         #print len(self.map_.data), '\nmap_.info:\n', self.map_.info, '\nmap_.header\n',self.map_.header
 
     def ConvertMap(self, map_msg):
+        #Convert an OccupancyGrid map message into the internal representation.  This allocates a map_t and returns it.
         map = OccupancyGrid()
-        map.info.origin.position.x = map_msg.info.origin.position.x + (map.info.width / 2) * map.info.resolution
-        map.info.origin.position.y = map_msg.info.origin.position.y + (map.info.height / 2) * map.info.resolution
-        map.data = map_msg.data
-        for i in range(map.info.width * map.info.height):
+        # map.info.origin.position.x = map_msg.info.origin.position.x + (map_msg.info.width / 2) * map_msg.info.resolution
+        # map.info.origin.position.y = map_msg.info.origin.position.y + (map_msg.info.height / 2) * map_msg.info.resolution
+        map.data = list(copy.deepcopy(map_msg.data))
+        for i in range(map_msg.info.width * map_msg.info.height):
             if map_msg.data[i] == 0:
                 map.data[i] = -1
             elif map_msg.data[i] == 100:
-                map.data[i] = +1
+                map.data[i] = 1
             else:
                 map.data[i] = 0
         return map
@@ -112,30 +119,48 @@ class AMCL():
                 init_pose.header = init_msg.header
                 init_pose.pose = init_msg.pose.pose
                 rospy.loginfo('updating robot initial pose')
-                self.PubPose(init_pose)
+                self.PubInitPose(init_pose)
+                self.init_pose = copy.deepcopy(init_pose)
 
     def apply_pose(self):
         #用来update robot position in map
-        self.listener.waitForTransform(self.target_frame, self.source_frame, rospy.Time(), rospy.Duration(2))
+        #self.listener.waitForTransform(self.target_frame, self.source_frame, rospy.Time(), rospy.Duration(2))
 
         self.listener.waitForTransform(self.target_frame, self.source_frame, rospy.Time.now(), rospy.Duration(0.01))
         (trans, rot) = self.listener.lookupTransform(self.target_frame, self.source_frame, rospy.Time.now())
-        self.init_pose.pose.position.x += trans[0]
-        self.init_pose.pose.position.y += trans[1]
-        self.init_pose.pose.position.z += trans[2]
+        # self.init_pose.pose.position.x = trans[0]
+        # self.init_pose.pose.position.y = trans[1]
+        # self.init_pose.pose.position.z = trans[2]
+        #
+        # self.init_pose.pose.orientation.x = rot[0]
+        # self.init_pose.pose.orientation.y = rot[1]
+        # self.init_pose.pose.orientation.z = rot[2]
+        # self.init_pose.pose.orientation.w = rot[3]
 
-        self.init_pose.pose.orientation.x += rot[0]
-        self.init_pose.pose.orientation.y += rot[1]
-        self.init_pose.pose.orientation.z += rot[2]
-        self.init_pose.pose.orientation.w += rot[3]
+        return
 
-    def PubPose(self, pose_msg):
+    def PubInitPose(self, pose_msg):
         pose_msg.header.stamp = rospy.Time.now()
         pub = rospy.Publisher('/set_pose', PoseStamped, queue_size=1)
         pub.publish(pose_msg)
+        self.current_pose = PoseStamped()
+        self.current_pose = copy.deepcopy(pose_msg)
 
     def HandleLaserMessage(self, data):
         pass
+
+    def HandleOdomMessage(self, data):
+
+        # self.current_pose.pose.position.x += data.pose.pose.position.x
+        # self.current_pose.pose.position.y += data.pose.pose.position.y
+        # self.current_pose.pose.position.z += data.pose.pose.position.z
+        #
+        # self.current_pose.pose.orientation.x += data.pose.pose.orientation.x
+        # self.current_pose.pose.orientation.y += data.pose.pose.orientation.y
+        # self.current_pose.pose.orientation.z += data.pose.pose.orientation.z
+        # self.current_pose.pose.orientation.w += data.pose.pose.orientation.w
+
+
 
     def define(self):
         if not rospy.has_param('~use_map_topic'):
@@ -208,7 +233,7 @@ class AMCL():
 
         self.init_pose.pose.orientation.w = init_orientation_w
 
-        self.PubPose(self.init_pose)
+        self.PubInitPose(self.init_pose)
 
 if __name__=='__main__':
     rospy.init_node('amcl_adapted')
