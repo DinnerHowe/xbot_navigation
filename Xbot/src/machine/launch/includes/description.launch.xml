@@ -1,0 +1,8 @@
+<!--
+  Robot description only (used in private and paired master).
+ -->
+<launch>  
+  <arg name="urdf_file" default="$(find xacro)/xacro.py '$(find machine)/urdf/robots/turtle/kobuki_hexagons_asus_xtion_pro.urdf.xacro'" />
+  <param name="robot_description" command="$(arg urdf_file)" />
+
+</launch>

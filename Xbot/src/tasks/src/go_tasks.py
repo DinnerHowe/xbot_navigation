@@ -21,7 +21,7 @@ from move_base_msgs.msg import MoveBaseAction
 from actionlib_msgs.msg import GoalStatus,GoalStatusArray
 from rosgraph_msgs.msg import Log
 from visualization_msgs.msg import Marker
-from geometry_msgs.msg import PoseWithCovarianceStamped,Pose
+from geometry_msgs.msg import PoseWithCovarianceStamped,PoseStamped
 
 class cruise_modle():
  def define(self):
@@ -52,7 +52,7 @@ class cruise_modle():
   self.current_odom=PoseWithCovarianceStamped()
   
  def odom_callback(self,odom):
-  self.current_odom.pose.pose=odom
+  self.current_odom.pose.pose=odom.pose
  
  def marker_callback(self,marker_point): 
   self.marker_point=marker_point
@@ -66,13 +66,13 @@ class cruise_modle():
    self.state=state
    if state.status==GoalStatus.ACTIVE or state.status==GoalStatus.SUCCEEDED:
     if self.state_define[state.status] not in self.log_info.msg:
-     rospy.loginfo(self.state_define[state.status])
+     rospy.loginfo(self.state_define[state.status] + '1')
      self.move_base.cancel_goal()
      pass
 
    if state.status!=GoalStatus.ACTIVE and state.status!=GoalStatus.SUCCEEDED:
     if self.error_state_define[state.status] not in self.log_info.msg:
-     rospy.loginfo(self.error_state_define[state.status])
+     rospy.loginfo(self.error_state_define[state.status] + '2')
      self.move_base.cancel_goal()
      pass
 
@@ -100,8 +100,8 @@ class cruise_modle():
   rospy.Subscriber("/rosout",Log, self.Log_callback)
   rospy.Subscriber("/move_base/status", GoalStatusArray, self.status_callback)
   #rospy.Subscriber("odom", Odometry, self.odom_callback)
-  rospy.Subscriber("robot_position_in_map", Pose, self.odom_callback)
-  rospy.Subscriber("ui_marker", Marker,self.marker_callback)
+  rospy.Subscriber("/robot_position_in_map", PoseStamped, self.odom_callback)
+  rospy.Subscriber("/ui_marker", Marker, self.marker_callback)
   rospy.spin()
 
 if __name__ == '__main__':

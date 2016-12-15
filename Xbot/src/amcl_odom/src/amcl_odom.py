@@ -8,7 +8,14 @@ This programm is tested on kuboki base turtlebot.
 """
 
 import rospy,math,tf
-from geometry_msgs.msg import Pose, PoseWithCovarianceStamped
+from geometry_msgs.msg import Pose
+from geometry_msgs.msg import  PoseStamped
+
+class ClearParams:
+    def __init__(self):
+        rospy.delete_param('~use_odom_topic')
+        rospy.delete_param('~target_frame')
+        rospy.delete_param('~source_frame')
 
 class amcl_odom():
  def __init__(self):
@@ -36,31 +43,31 @@ class amcl_odom():
   self.pose.orientation.z=qz
   self.pose.orientation.w=qw
    
-  #self.odom.pose.pose=self.pose
-  #self.odom.header.stamp=rospy.Time.now()
-  #self.odom.header.frame_id="map"
+  self.odom.pose=self.pose
+  self.odom.header.stamp=rospy.Time.now()
+  self.odom.header.frame_id="map"
    
-  self.odom_pub.publish(self.pose)
+  self.odom_pub.publish(self.odom)
   
  def define(self):
+ 
+  if not rospy.has_param("~use_odom_topic"):
+   rospy.set_param("~use_odom_topic","/robot_position_in_map")
+  self.use_odom_topic=rospy.get_param("~use_odom_topic")
+  
+  if not rospy.has_param("~target_frame"):
+   rospy.set_param("~target_frame","/map")
+  self.target_frame=rospy.get_param("~target_frame")
+
+  if not rospy.has_param("~source_frame"):
+   rospy.set_param("~source_frame","/base_footprint")
+  self.source_frame=rospy.get_param("~source_frame")
+
   self.listener=tf.TransformListener()
-  self.odom_pub=rospy.Publisher("robot_position_in_map", Pose, queue_size=1)
-  self.odom=PoseWithCovarianceStamped()
+  self.odom_pub=rospy.Publisher(self.use_odom_topic, PoseStamped, queue_size=1)
+  self.odom=PoseStamped()
   self.pose=Pose()
   
-  if rospy.has_param("~target_frame"):
-   self.target_frame=rospy.get_param("~target_frame")
-  else:
-   rospy.set_param("~target_frame","/map")
-   self.target_frame=rospy.get_param("~target_frame")
-
-  if rospy.has_param("~source_frame"):
-   self.source_frame=rospy.get_param("~source_frame")
-  else:
-   rospy.set_param("~source_frame","/base_footprint")
-   self.source_frame=rospy.get_param("~source_frame")
-
-
 if __name__ == '__main__':
  rospy.init_node('amcl_odom')
  try:

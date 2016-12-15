@@ -18,13 +18,13 @@ import Queue
 import copy
 from threading import Lock
 from nav_msgs.msg import Path
-from geometry_msgs.msg import Pose
+from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import PointStamped
 
 class ClearParams():
     def __init__(self):
         rospy.loginfo('Cleaning Parameters...')
-        rospy.delete_param('~PlanTopic')
+        rospy.delete_param('~RawPlanTopic')
         rospy.delete_param('~OdomTopic')
         rospy.delete_param('~PositionFree')
         rospy.delete_param('~ActionPlanTopic')
@@ -35,12 +35,12 @@ class PlanFixer():
     def __init__(self):
         self.define()
         rospy.Subscriber(self.SubTopic, Path, self.RawPathCB)
-        rospy.Subscriber('%s' % self.OdomTopic, Pose, self.OdomCB)
+        rospy.Subscriber(self.OdomTopic, PoseStamped, self.OdomCB)
         rospy.spin()
 
     def define(self):
-        if not rospy.has_param('~PlanTopic'):
-            rospy.set_param('~PlanTopic', '/move_base/NavfnROS/plan')
+        if not rospy.has_param('~RawPlanTopic'):
+            rospy.set_param('~RawPlanTopic', '/move_base/NavfnROS/plan')
         if not rospy.has_param('~OdomTopic'):
             rospy.set_param('~OdomTopic', '/robot_position_in_map')
         if not rospy.has_param('~PositionFree'):
@@ -52,7 +52,7 @@ class PlanFixer():
 
         self.GoalTopic = rospy.get_param('~GoalTopic')
         self.ActionPlanTopic = rospy.get_param('~ActionPlanTopic')
-        self.SubTopic = rospy.get_param('~PlanTopic')
+        self.SubTopic = rospy.get_param('~RawPlanTopic')
         self.OdomTopic = rospy.get_param('~OdomTopic')
         self.PositionFree = rospy.get_param('~PositionFree')
 
@@ -63,7 +63,7 @@ class PlanFixer():
 
     def OdomCB(self, data):
         with self.locker:
-            self.odom = data.position
+            self.odom = data.pose.position
 
     def RawPathCB(self, data):
         with self.locker:
