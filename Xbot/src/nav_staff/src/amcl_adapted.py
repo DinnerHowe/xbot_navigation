@@ -128,14 +128,15 @@ class AMCL():
 
         self.listener.waitForTransform(self.target_frame, self.source_frame, rospy.Time.now(), rospy.Duration(0.01))
         (trans, rot) = self.listener.lookupTransform(self.target_frame, self.source_frame, rospy.Time.now())
-        # self.init_pose.pose.position.x = trans[0]
-        # self.init_pose.pose.position.y = trans[1]
-        # self.init_pose.pose.position.z = trans[2]
-        #
-        # self.init_pose.pose.orientation.x = rot[0]
-        # self.init_pose.pose.orientation.y = rot[1]
-        # self.init_pose.pose.orientation.z = rot[2]
-        # self.init_pose.pose.orientation.w = rot[3]
+
+        self.init_pose.pose.position.x = trans[0]
+        self.init_pose.pose.position.y = trans[1]
+        self.init_pose.pose.position.z = trans[2]
+
+        self.init_pose.pose.orientation.x = rot[0]
+        self.init_pose.pose.orientation.y = rot[1]
+        self.init_pose.pose.orientation.z = rot[2]
+        self.init_pose.pose.orientation.w = rot[3]
 
         return
 
@@ -151,14 +152,14 @@ class AMCL():
 
     def HandleOdomMessage(self, data):
 
-        # self.current_pose.pose.position.x += data.pose.pose.position.x
-        # self.current_pose.pose.position.y += data.pose.pose.position.y
-        # self.current_pose.pose.position.z += data.pose.pose.position.z
-        #
-        # self.current_pose.pose.orientation.x += data.pose.pose.orientation.x
-        # self.current_pose.pose.orientation.y += data.pose.pose.orientation.y
-        # self.current_pose.pose.orientation.z += data.pose.pose.orientation.z
-        # self.current_pose.pose.orientation.w += data.pose.pose.orientation.w
+        self.current_pose.pose.position.x += data.pose.pose.position.x
+        self.current_pose.pose.position.y += data.pose.pose.position.y
+        self.current_pose.pose.position.z += data.pose.pose.position.z
+
+        self.current_pose.pose.orientation.x += data.pose.pose.orientation.x
+        self.current_pose.pose.orientation.y += data.pose.pose.orientation.y
+        self.current_pose.pose.orientation.z += data.pose.pose.orientation.z
+        self.current_pose.pose.orientation.w += data.pose.pose.orientation.w
 
 
 

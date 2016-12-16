@@ -37,7 +37,7 @@ def Map_Center_Cell(map_origin, resolution):
     centremap_cell = [0 - int(round(map_origin.position.x / resolution)), 0 - int(round(map_origin.position.y / resolution))]
     return centremap_cell
 
-def Map_Generation(data):
+def Empty_Map_Generation(data):
     map_data = numpy.array(copy.deepcopy(data.data))
     width = data.info.width
     height = data.info.height
