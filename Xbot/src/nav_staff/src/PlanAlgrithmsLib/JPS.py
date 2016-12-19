@@ -178,7 +178,7 @@ def jps(field, start_x, start_y, end_x, end_y):
         """
         if node is not None:
             pq.add_task (node, field [node[0]] [node[1]] + max(abs(node[0] - end_x), abs(node[1] - end_y)))
-
+            # print ("add node: ", node[0], node[1])
             
     def _jps_explore_diagonal (startX, startY, directionX, directionY):
         """
@@ -198,7 +198,7 @@ def jps(field, start_x, start_y, end_x, end_y):
         while (True):
             cur_x += directionX
             cur_y += directionY
-            curCost += 1
+            curCost += 1.414
 
             if field [cur_x] [cur_y] == UNINITIALIZED:
                 field [cur_x] [cur_y] = curCost
@@ -211,7 +211,8 @@ def jps(field, start_x, start_y, end_x, end_y):
                 if VISUAL:
                     visited[cur_x][cur_y] = True
                 raise FoundPath()
-            else: #collided with an obstacle. We are done. 
+            else: #collided with an obstacle. We are done.
+                print ('explore_diagonal: ', field[cur_y][cur_x])
                 return None
 
             # If a jump point is found, 
@@ -256,7 +257,8 @@ def jps(field, start_x, start_y, end_x, end_y):
                 if VISUAL:
                     visited[cur_x][cur_y] = True
                 raise FoundPath()
-            else: #collided with an obstacle or previously explored part. We are done. 
+            else: #collided with an obstacle or previously explored part. We are done.
+                print ('explore_cardinal: ', field[cur_y][cur_x])
                 return None
 
             #check neighbouring cells, i.e. check if cur_x, cur_y is a jump point. 
@@ -300,11 +302,11 @@ def jps(field, start_x, start_y, end_x, end_y):
             queue_jumppoint(_jps_explore_diagonal (pX, pY, -1, 1))
             queue_jumppoint(_jps_explore_diagonal (pX, pY, -1, -1))
         except FoundPath:
+            print ('found path...')
             return _get_path(sources, start_x, start_y, end_x, end_y)
-
+    print (expanded)
     raise ValueError("No path is found")
     #end of jps
-    
 
 def _get_path(sources, start_x, start_y, end_x, end_y):
     """
@@ -325,6 +327,8 @@ def _get_path(sources, start_x, start_y, end_x, end_y):
         result.append((cur_x, cur_y))
         cur_x, cur_y = sources[cur_x][cur_y]
     result.reverse()
+    print ('#########################result:\n ', result)
+    #print ('#########################source:\n ', sources)
     return [(start_x, start_y)] + result
 
 def _signum(n):

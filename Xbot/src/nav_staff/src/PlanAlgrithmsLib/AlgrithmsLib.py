@@ -15,6 +15,9 @@ import numpy
 import heapq
 import itertools
 from geometry_msgs.msg import PoseStamped
+import copy
+
+
 
 class JPS():
     ##########################################################################################################
@@ -22,7 +25,8 @@ class JPS():
     #  Described: https://harablog.wordpress.com/2011/09/07/jump-point-search/, and thanks Christopher Chu   #
     #                                                                                                        #
     # Using this function:                                                                                   #
-    #   - use JPS.get_path(end, start, mapdata) to get paths. input(end,start,map)                           #
+    #   - use JPS.get_map(map)                                                                               #
+    #   - use JPS.get_path(end, start) to get paths. input(end,start)                                        #
     #    end:point, start:piont, map: OccupancyGrid                                                          #
     #                                                                                                        #
     # Note: this implementation allows diagonal movement and "corner cutting"                                #
@@ -32,184 +36,232 @@ class JPS():
     def __init__(self):
         self.define()
 
-    def define(self): #, map_message):
-        # self.expanded_field = [[False for i in range(map_message.info.width)] for j in range(map_message.info.height)]
-        # self.visited_field = [[False for i in range(map_message.info.width)] for j in range(map_message.info.height)]
-
+    def define(self):
         if not rospy.has_param('~obstacle_thread'):
             rospy.set_param('~obstacle_thread', 80)
         self.obstacle_thread = rospy.get_param('~obstacle_thread')
 
         self.UNINITIALIZED = 0
         self.OBSTACLE = 100
-        self.ORIGIN = -10
-        self.DESTINATION = -20
+        self.ORIGIN = 0
+        self.DESTINATION = -2
+        self.devergency_scale = 8
+
         self.Queue = PriorityQueue()
 
-    def get_path(self, end, start, map_message):
+        self.JPS_map = None
+        self.start_from = None
+        self.end_with = None
+
+    def get_path(self, end, start):
         rospy.loginfo('starting gernerating plan')
-        JPS_map = self.generate_map(map_message)
-        start_from = (int(start.x / map_message.info.resolution), int(start.y / map_message.info.resolution))
-        end_with = (int(end.x / map_message.info.resolution), int(end.y / map_message.info.resolution))
-        path = list()
-        path = self.JPS_(end_with, start_from, JPS_map)
-        return self.get_full_path(path)
+        if self.JPS_map != None:
+            self.start_from = (int((start.x - self.mapinfo.origin.position.x)/ self.mapinfo.resolution), int((start.y - self.mapinfo.origin.position.y) / self.mapinfo.resolution))
+            self.end_with = (int((end.x - self.mapinfo.origin.position.x) / self.mapinfo.resolution), int((end.y - self.mapinfo.origin.position.y) / self.mapinfo.resolution))
+            if self.JPS_map[self.end_with[1]][self.end_with[0]] >= self.obstacle_thread:
+                rospy.loginfo('goal is not walkable')
+                return None
+            if self.JPS_map[self.start_from[1]][self.start_from[0]] >= self.obstacle_thread:
+                rospy.loginfo('cannot walk due to staying in a obstacle')
+                return None
+            path = list()
+            path = self.JPS_()
+            rospy.loginfo('JPS path done')
+            self.Queue = PriorityQueue()
+            self.start_from = None
+            self.end_with = None
+            return self.get_full_path(path)
+        else:
+            rospy.loginfo('waiting for map... ')
+            self.start_from = None
+            self.end_with = None
+            self.Queue = PriorityQueue()
+
+            return None
+
+
+    def get_map(self, map_message):
+        self.mapinfo = map_message.info
+        self.JPS_map = self.generate_map(map_message)
+
 
     def generate_map(self, map_message):
         _map = numpy.array(map_message.data)
-        print '1 ', len(_map)
-        print '2 ', map_message.info.height*map_message.info.width
-        _map = map.reshape(map_message.info.height, map_message.info.width)
-        # _map = [[self.UNINITIALIZED if (_map[i][j] < self.obstacle_thread and _map[i][j] >= 0) else self.OBSTACLE for j in range(map_message.info.width)] for i in range(map_message.info.height)]
-        return _map
+        _map = _map.reshape(map_message.info.height, map_message.info.width)
+        map = self.devergency(_map)
+        # print 'height', len(_map), 'width', len(_map[0])
+        return map
 
-    def JPS_(self, end, start, map):
-        self.end = end
-        if map[self.end[0]][self.end[1]] == self.OBSTACLE:
-            rospy.loginfo('goal is not walkable')
-            return []
-        if map[start[0]][start[1]] == self.OBSTACLE:
-            rospy.loginfo('cannot walk due to staying in a obstacle')
-            return []
-        self.field = [[j for j in i] for i in map] # this takes less time than deep copying.
-        self.sources = [[(None, None) for i in self.field[0]] for j in self.field]  # the jump-point predecessor to each point.
-        self.field[start[0]][start[1]] = self.ORIGIN
-        self.field[self.end[0]][self.end[1]] = self.DESTINATION
-        self.ADD_JUMPPOINT(start)
+    def devergency(self, map_message):
+        map = copy.deepcopy(map_message)
+        for i in range(self.mapinfo.height):
+            for j in range(self.mapinfo.width):
+                if map_message[i][j] == self.OBSTACLE:
+                    for n in range(self.devergency_scale):
+                        if j + n <= self.mapinfo.width-1 and i + n <= self.mapinfo.height - 1:
+                            map[i + n][j + n] = self.obstacle_thread #100
+                            map[i + n][j] = self.obstacle_thread  # self.OBSTACLE
+
+                        if i - n >= 0 and j - n >=0:
+                            map[i - n][j - n] = self.obstacle_thread #100
+                            map[i - n][j] = self.obstacle_thread  # self.OBSTACLE
+
+                        if i + n <= self.mapinfo.height - 1 and j - n >= 0:
+                            map[i + n][j - n] = self.obstacle_thread
+                            map[i][j - n] = self.obstacle_thread
+
+                        if i - n >= 0 and j + n <= self.mapinfo.width-1:
+                            map[i - n][j + n] = self.obstacle_thread
+                            map[i][j + n] = self.obstacle_thread
+
+        return map
+
+    def JPS_(self):
+        self.field = [[j for j in i] for i in self.JPS_map] # this takes less time than deep copying.
+        self.sources = [[(None, None) for i in j] for j in self.field]  # the jump-point predecessor to each point.
+        self.field[self.start_from[1]][self.start_from[0]] = self.ORIGIN
+        self.field[self.end_with[1]][self.end_with[0]] = self.DESTINATION
+        self.ADD_JUMPPOINT(self.start_from)
         while not self.Queue.empty():
             node = self.Queue.pop_task()
             try:
-                self.ADD_JUMPPOINT(self.explore_diagonal(node, 1, 0))
-                self.ADD_JUMPPOINT(self.explore_diagonal(node, -1, 0))
-                self.ADD_JUMPPOINT(self.explore_diagonal(node, 0, 1))
-                self.ADD_JUMPPOINT(self.explore_diagonal(node, 0, -1))
+                self.ADD_JUMPPOINT(self.explore_straight(node, 1, 0))
+                self.ADD_JUMPPOINT(self.explore_straight(node, -1, 0))
+                self.ADD_JUMPPOINT(self.explore_straight(node, 0, 1))
+                self.ADD_JUMPPOINT(self.explore_straight(node, 0, -1))
 
-                self.ADD_JUMPPOINT(self.explore_cardinal(node, 1, 1))
-                self.ADD_JUMPPOINT(self.explore_cardinal(node, 1, -1))
-                self.ADD_JUMPPOINT(self.explore_cardinal(node, -1, 1))
-                self.ADD_JUMPPOINT(self.explore_cardinal(node, -1, -1))
-            except FoundPath():
-                return self.generate_path_jump_point(start)
+                self.ADD_JUMPPOINT(self.explore_diagonal(node, 1, 1))
+                self.ADD_JUMPPOINT(self.explore_diagonal(node, 1, -1))
+                self.ADD_JUMPPOINT(self.explore_diagonal(node, -1, 1))
+                self.ADD_JUMPPOINT(self.explore_diagonal(node, -1, -1))
+            except FoundPath:
+                return self.generate_path_jump_point()
+        # raise ValueError('No Path founded')
 
 
     def ADD_JUMPPOINT(self, node):
         if node != None:
-            print 'add node: ', node
-            self.Queue.add_task(node, self.field[node[0]][node[1]] + max(abs(node[0] - self.end[0]), abs(node[1] - self.end[1])))
+            # print 'add node: ', node[0]*self.mapinfo.resolution+self.mapinfo.origin.position.x , node[1] * self.mapinfo.resolution + self.mapinfo.origin.position.y
+            self.Queue.add_task(node, self.field[node[1]][node[0]] + numpy.sqrt((node[1] - self.end_with[1])**2 + (node[0] - self.end_with[0])**2))
+            #self.Queue.add_task(node, self.field[node[1]][node[0]] + max((node[1] - self.end_with[1]), (node[0] - self.end_with[0])))
 
-    def explore_diagonal(self, start, direction_x, direction_y):
-        cur_x = start[0]
-        cur_y = start[1]
-        cur_cost = self.field[start[0]][start[1]]
+
+    def explore_diagonal(self, node, direction_x, direction_y):
+        cur_x = node[0]
+        cur_y = node[1]
+        cur_cost = self.field[node[1]][node[0]]
+        #print 'explore_diagonal cost', cur_cost
         while True:
             cur_x += direction_x
             cur_y += direction_y
             cur_cost += 1
-            if self.field[cur_x][cur_y] == self.UNINITIALIZED:
-                self.field[cur_x][cur_y] = cur_cost
-                self.sources[cur_x][cur_y] = start[0], start[1]
-            elif cur_x == self.end[0] and cur_y == self.end[1]:
-                self.field[cur_x][cur_y] = cur_cost
-                self.sources[cur_x][cur_y] = start[0], start[1]
+            if self.field[cur_y][cur_x] == self.UNINITIALIZED:
+                self.field[cur_y][cur_x] = cur_cost
+                self.sources[cur_y][cur_x] = node
+            elif cur_x == self.end_with[0] and cur_y == self.end_with[1]:
+                self.field[cur_y][cur_x] = cur_cost
+                self.sources[cur_y][cur_x] = node
                 raise FoundPath()
             else:
+                #print 'explore_diagonal: ', self.field[cur_y][cur_x]
                 return None
             #if a jump point is found
-            if self.field[cur_x + direction_x][cur_y] == self.OBSTACLE and self.field[cur_x + direction_x][cur_y + direction_y] != self.OBSTACLE:
+            if self.field[cur_y][cur_x + direction_x] >= self.obstacle_thread and self.field[cur_y + direction_y][cur_x + direction_x] < self.obstacle_thread:
                 return (cur_x, cur_y)
             else:
-                self.ADD_JUMPPOINT(self.explore_cardinal((cur_x, cur_y), direction_x, 0))
-            if self.field[cur_x][cur_y + direction_y] == self.OBSTACLE and self.field[cur_x + direction_x][cur_y + direction_y] != self.OBSTACLE:
-                return (cur_x, cur_y)
-            else:
-                self.ADD_JUMPPOINT(self.explore_cardinal((cur_x, cur_y), 0, direction_y))
+                self.ADD_JUMPPOINT(self.explore_straight((cur_x, cur_y), direction_x, 0))
 
-    def explore_cardinal(self, start, direction_x, direction_y):
-        cur_x = start[0]
-        cur_y = start[1]
-        cur_cost = self.field[start[0]][start[1]]
+            if self.field[cur_y + direction_y][cur_x] >= self.obstacle_thread and self.field[cur_y + direction_y][cur_x + direction_x] < self.obstacle_thread:
+                return (cur_x, cur_y)
+            else:
+                self.ADD_JUMPPOINT(self.explore_straight((cur_x, cur_y), 0, direction_y))
+
+
+    def explore_straight(self, node, direction_x, direction_y):
+        cur_x = node[0]
+        cur_y = node[1]
+        cur_cost = self.field[node[1]][node[0]]
         while True:
             cur_x += direction_x
             cur_y += direction_y
-            cur_cost += 1
-            if self.field[cur_x][cur_y] == self.UNINITIALIZED:
-                self.field[cur_x][cur_y] = cur_cost
-                self.sources[cur_x][cur_y] = start
-            elif cur_x == self.end[0] and cur_y == self.end[1]:
-                self.field[cur_x][cur_y] = cur_cost
-                self.sources[cur_x][cur_y] = start
+            cur_cost += 1.414
+            if self.field[cur_y][cur_x] == self.UNINITIALIZED:
+                self.field[cur_y][cur_x] = cur_cost
+                self.sources[cur_y][cur_x] = node
+            elif cur_x == self.end_with[0] and cur_y == self.end_with[1]:
+                self.field[cur_y][cur_x] = cur_cost
+                self.sources[cur_y][cur_x] = node
                 raise FoundPath()
             else:
-                return  None
+                #print 'explore_cardinal: ', self.field[cur_y][cur_x]
+                return None
 
             if direction_x == 0:
-                if self.field[cur_x + 1][cur_y] == self.OBSTACLE and self.field[cur_x + 1][cur_y + direction_y] != self.OBSTACLE:
+                if self.field[cur_y][cur_x + 1] >= self.obstacle_thread and self.field[cur_y + direction_y][cur_x + 1] < self.obstacle_thread:
                     return (cur_x, cur_y)
-                if self.field[cur_x - 1][cur_y] == self.OBSTACLE and self.field[cur_x - 1][cur_y + direction_y] != self.OBSTACLE:
+                if self.field[cur_y][cur_x - 1] >= self.obstacle_thread and self.field[cur_y + direction_y][cur_x - 1] < self.obstacle_thread:
                     return (cur_x, cur_y)
-            elif direction_y == 0 :
-                if self.field[cur_x][cur_y + 1] == self.OBSTACLE and self.field[cur_x + direction_x][cur_y + 1] != self.OBSTACLE:
+            if direction_y == 0 :
+                if self.field[cur_y + 1][cur_x] >= self.obstacle_thread and self.field[cur_y + 1][cur_x + direction_x] < self.obstacle_thread:
                     return (cur_x, cur_y)
-                if self.field[cur_x][cur_y - 1] == self.OBSTACLE and self.field[cur_x + direction_x][cur_y - 1] != self.OBSTACLE:
+                if self.field[cur_y - 1][cur_x] >= self.obstacle_thread and self.field[cur_y - 1][cur_x + direction_x] < self.obstacle_thread:
                     return (cur_x, cur_y)
 
-    def generate_path_jump_point(self, start):
-        """
-        Reconstruct the jump_point consisted path from the source information as given by jps(...).
 
-        Parameters
-        sources          - a 2d array of the predecessor to each node
-        start            - the x, y coordinates of the starting position
-        end              - the x, y coordinates of the destination
-
-        Return
-        posestamped list
-        """
-        path = list()
-        cur_x = self.end[0]
-        cur_y = self.end[1]
-        while cur_x != start[0] or cur_y != start[1]:
+    def generate_path_jump_point(self):
+        # print 'start generate_path_jump_point'
+        path = []
+        cur_x = self.end_with[0]
+        cur_y = self.end_with[1]
+        # print 'end: ', cur_x,cur_y
+        # print 'start: ', self.start_from[0],self.start_from[1]
+        #raw_input('continue?')
+        while cur_x != self.start_from[0] and cur_y != self.start_from[1]:
+            # if cur_y != None and cur_x != None:
             pose = PoseStamped()
-            pose.pose.position.x = cur_x
-            pose.pose.position.y = cur_y
+            pose.pose.position.x = cur_x * self.mapinfo.resolution + self.mapinfo.origin.position.x
+            pose.pose.position.y = cur_y * self.mapinfo.resolution + self.mapinfo.origin.position.y
             path.append(pose)
-            cur_x, cur_y = self.sources[cur_x][cur_y]
+            # print 'path length:', len(path), cur_x, cur_y
+            (cur_x, cur_y) = self.sources[cur_y][cur_x]
+            #raw_input('continue?')
+
+
         path.reverse()
-        startpose = PoseStamped()
-        startpose.pose.position.x = start[0]
-        startpose.pose.position.y = start[1]
-        endpose = PoseStamped()
-        endpose.pose.position.x = self.end[0]
-        endpose.pose.position.y = self.end[1]
-        path = startpose + path + endpose
+        startpose = [PoseStamped()]
+        startpose[0].pose.position.x = self.start_from[0] * self.mapinfo.resolution + self.mapinfo.origin.position.x
+        startpose[0].pose.position.y = self.start_from[1] * self.mapinfo.resolution + self.mapinfo.origin.position.y
+        path = startpose + path
+        # print 'get result'
+        # for i in path:
+        #     print i
         return path
 
     def get_full_path(self, path):
-        """
-        Generates the full path from a list of jump points. Assumes that you moved in only one direction between
-        jump points.
-
-        Return
-        posestamped list
-        """
+        rospy.loginfo('start get full path')
         if path == []:
             return []
         if path:
-            cur_pose = path[0]
-            result = [path[0]]
-            for i in range(len(path) - 1):
-                while cur_pose.pose.position.x !=path[i + 1].pose.position.x or cur_pose.pose.position.y != path[i +1].pose.position.y:
-                    cur_pose.pose.position.x += self._signum(path[i + 1].pose.position.x - path[i].pose.position.x)
-                    cur_pose.pose.position.y += self._signum(path[i + 1].pose.position.y - path[i].pose.position.y)
-                    result.append(cur_pose)
-            return result
+            if path[0] != None:
+                cur_pose = path[0]
+                result = []
+                for i in range(len(path) -1):
+                    while abs(round((cur_pose.pose.position.x - path[i + 1].pose.position.x), 2)) > 0.05 or abs(round(cur_pose.pose.position.y - path[i +1].pose.position.y, 2)) > 0.05:
+                        if abs(round(cur_pose.pose.position.x - path[i + 1].pose.position.x, 2)) > 0.05:
+                            cur_pose.pose.position.x += self._signum(path[i + 1].pose.position.x - path[i].pose.position.x)
+                        if abs(round(cur_pose.pose.position.y - path[i +1].pose.position.y, 2)) > 0.05:
+                            cur_pose.pose.position.y += self._signum(path[i + 1].pose.position.y - path[i].pose.position.y)
+                        result.append(copy.deepcopy(cur_pose))
+                        #print len(result)
+                rospy.loginfo('full path done')
+                return result
 
 
     def _signum(self, n):
         if n > 0:
-            return 1
+            return 0.05
         elif n < 0:
-            return -1
+            return -0.05
         else:
             return 0
 

@@ -34,6 +34,8 @@ class Planner():
     def __init__(self):
         self.define()
         rospy.Subscriber(self.GoalTopic, PointStamped, self.GoalCB)
+        rospy.Subscriber(self.MapTopic, OccupancyGrid, self.MapCB)
+        rospy.Subscriber(self.OdomTopic, PoseStamped, self.OdomCB)
         rospy.Timer(self.period, self.PubPlanCB)
         rospy.spin()
 
@@ -46,18 +48,24 @@ class Planner():
         plan = Path()
         plan.header = data.header
         end = data.point
-        #odom = rospy.wait_for_message(self.OdomTopic, PoseStamped)
-        #start = odom.pose.position
-        odom = PoseStamped()
-        odom.pose.position.x = -1.63
-        odom.pose.position.y = -0.22
-        start = odom.pose.position
-        mapdata = rospy.wait_for_message(self.MapTopic, OccupancyGrid)
-        rospy.loginfo('generating a path')
-        JPS = AlgrithmsLib.JPS()
-        plan.poses = JPS.get_path(end, start, mapdata)
-        print plan
-        self.plans.append(plan)
+        if self.odom != None:
+            start = self.odom.pose.position
+            rospy.loginfo('generating a path')
+            plan.poses = self.JPS.get_path(end, start)
+            if plan.poses != None:
+                self.plans.append(plan)
+                rospy.loginfo('path got\n\n')
+        else:
+            rospy.loginfo('waiting for odom...')
+
+    def MapCB(self, map_message):
+        with self.locker:
+            self.JPS.get_map(map_message)
+
+    def OdomCB(self, odom_message):
+        self.odom = odom_message
+
+
 
 
     def PubPlanCB(self, event):
@@ -102,6 +110,11 @@ class Planner():
         self.locker = Lock()
         self.plans = collections.deque(maxlen=1)
         self.PubPlan = Path()
+
+        self.JPS = AlgrithmsLib.JPS()
+        self.odom = None
+
+
 
 if __name__=='__main__':
      rospy.init_node('Planner')
