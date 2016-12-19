@@ -22,9 +22,8 @@ class JPS():
     #  Described: https://harablog.wordpress.com/2011/09/07/jump-point-search/, and thanks Christopher Chu   #
     #                                                                                                        #
     # Using this function:                                                                                   #
-    #   - use generate_map(...) to create an 2d array denoting which cells are walkable                    #
-    #   - use jps(...) to get paths.                                                                         #
-    #   - use get_full_path(...) on the result from jps to get every cell in the path.                       #
+    #   - use JPS.get_path(end, start, mapdata) to get paths. input(end,start,map)                           #
+    #    end:point, start:piont, map: OccupancyGrid                                                          #
     #                                                                                                        #
     # Note: this implementation allows diagonal movement and "corner cutting"                                #
     #                                                                                                        #
@@ -41,10 +40,10 @@ class JPS():
             rospy.set_param('~obstacle_thread', 80)
         self.obstacle_thread = rospy.get_param('~obstacle_thread')
 
-        self.UNINITIALIZED = -1
+        self.UNINITIALIZED = 0
         self.OBSTACLE = 100
-        self.ORIGIN = 0
-        self.DESTINATION = -2
+        self.ORIGIN = -10
+        self.DESTINATION = -20
         self.Queue = PriorityQueue()
 
     def get_path(self, end, start, map_message):
@@ -54,15 +53,15 @@ class JPS():
         end_with = (int(end.x / map_message.info.resolution), int(end.y / map_message.info.resolution))
         path = list()
         path = self.JPS_(end_with, start_from, JPS_map)
-        return path #self.get_full_path(path)
+        return self.get_full_path(path)
 
     def generate_map(self, map_message):
-        map = numpy.array(map_message.data)
-        print '1 ', len(map)
+        _map = numpy.array(map_message.data)
+        print '1 ', len(_map)
         print '2 ', map_message.info.height*map_message.info.width
-        map = map.reshape(map_message.info.height, map_message.info.width)
-        map = [[self.UNINITIALIZED if map[i][j] < self.obstacle_thread else self.OBSTACLE for j in range(map_message.info.width)] for i in range(map_message.info.height)]
-        return map
+        _map = map.reshape(map_message.info.height, map_message.info.width)
+        # _map = [[self.UNINITIALIZED if (_map[i][j] < self.obstacle_thread and _map[i][j] >= 0) else self.OBSTACLE for j in range(map_message.info.width)] for i in range(map_message.info.height)]
+        return _map
 
     def JPS_(self, end, start, map):
         self.end = end
@@ -89,12 +88,13 @@ class JPS():
                 self.ADD_JUMPPOINT(self.explore_cardinal(node, 1, -1))
                 self.ADD_JUMPPOINT(self.explore_cardinal(node, -1, 1))
                 self.ADD_JUMPPOINT(self.explore_cardinal(node, -1, -1))
-            except FoundPath:
+            except FoundPath():
                 return self.generate_path_jump_point(start)
 
 
     def ADD_JUMPPOINT(self, node):
-        if node != []:
+        if node != None:
+            print 'add node: ', node
             self.Queue.add_task(node, self.field[node[0]][node[1]] + max(abs(node[0] - self.end[0]), abs(node[1] - self.end[1])))
 
     def explore_diagonal(self, start, direction_x, direction_y):
@@ -111,9 +111,9 @@ class JPS():
             elif cur_x == self.end[0] and cur_y == self.end[1]:
                 self.field[cur_x][cur_y] = cur_cost
                 self.sources[cur_x][cur_y] = start[0], start[1]
-                raise FoundPath
+                raise FoundPath()
             else:
-                return []
+                return None
             #if a jump point is found
             if self.field[cur_x + direction_x][cur_y] == self.OBSTACLE and self.field[cur_x + direction_x][cur_y + direction_y] != self.OBSTACLE:
                 return (cur_x, cur_y)
@@ -138,9 +138,9 @@ class JPS():
             elif cur_x == self.end[0] and cur_y == self.end[1]:
                 self.field[cur_x][cur_y] = cur_cost
                 self.sources[cur_x][cur_y] = start
-                raise FoundPath
+                raise FoundPath()
             else:
-                return []
+                return  None
 
             if direction_x == 0:
                 if self.field[cur_x + 1][cur_y] == self.OBSTACLE and self.field[cur_x + 1][cur_y + direction_y] != self.OBSTACLE:
@@ -178,7 +178,10 @@ class JPS():
         startpose = PoseStamped()
         startpose.pose.position.x = start[0]
         startpose.pose.position.y = start[1]
-        path = startpose + path
+        endpose = PoseStamped()
+        endpose.pose.position.x = self.end[0]
+        endpose.pose.position.y = self.end[1]
+        path = startpose + path + endpose
         return path
 
     def get_full_path(self, path):
