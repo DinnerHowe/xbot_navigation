@@ -18,8 +18,9 @@ from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Path
 from nav_msgs.msg import OccupancyGrid
 from threading import Lock
+import time
 
-timer = 0
+timer = time.time()
 
 class ClearParams:
     def __init__(self):
@@ -54,7 +55,7 @@ class Planner():
             plan.poses = self.JPS.get_path(end, start)
             if plan.poses != None:
                 self.plans.append(plan)
-                rospy.loginfo('path got\n\n')
+                rospy.loginfo('path got')
         else:
             rospy.loginfo('waiting for odom...')
 
@@ -63,7 +64,8 @@ class Planner():
             self.JPS.get_map(map_message)
 
     def OdomCB(self, odom_message):
-        self.odom = odom_message
+        with self.locker:
+            self.odom = odom_message
 
 
 
@@ -74,15 +76,13 @@ class Planner():
                 rospy.loginfo('update plan')
                 self.PubPlan = self.plans.pop()
             else:
-                if self.PubPlan != Path():
-                    pub = rospy.Publisher(self.PlanTopic, Path, queue_size=1)
-                    pub.publish(self.PubPlan)
-                else:
-                    global timer
-                    timer += 1
-                    if timer == 500:
-                        rospy.loginfo('please give a goal')
-                        timer = 0
+                global timer
+                if time.time() - timer > 5:
+                    rospy.loginfo('waiting for new goal input')
+                    timer = time.time()
+            if self.PubPlan != Path():
+                pub = rospy.Publisher(self.PlanTopic, Path, queue_size=1)
+                pub.publish(self.PubPlan)
 
 
     def define(self):
@@ -99,7 +99,7 @@ class Planner():
         self.PlanTopic = rospy.get_param('~PlanTopic')
 
         if not rospy.has_param('~PublishFrequency'):
-            rospy.set_param('~PublishFrequency', 0.01)
+            rospy.set_param('~PublishFrequency', 0.001)
         self.PublishFrequency = rospy.get_param('~PublishFrequency')
 
         if not rospy.has_param('~OdomTopic'):

@@ -17,8 +17,6 @@ import itertools
 from geometry_msgs.msg import PoseStamped
 import copy
 
-
-
 class JPS():
     ##########################################################################################################
     # JUMP-POINT SEARCH                                                                                      #
@@ -54,23 +52,26 @@ class JPS():
         self.end_with = None
 
     def get_path(self, end, start):
-        rospy.loginfo('starting gernerating plan')
+        #rospy.loginfo('starting gernerating plan')
         if self.JPS_map != None:
             self.start_from = (int((start.x - self.mapinfo.origin.position.x)/ self.mapinfo.resolution), int((start.y - self.mapinfo.origin.position.y) / self.mapinfo.resolution))
             self.end_with = (int((end.x - self.mapinfo.origin.position.x) / self.mapinfo.resolution), int((end.y - self.mapinfo.origin.position.y) / self.mapinfo.resolution))
             if self.JPS_map[self.end_with[1]][self.end_with[0]] >= self.obstacle_thread:
-                rospy.loginfo('goal is not walkable')
+                rospy.logwarn('goal is not walkable, unable to generate a plan')
                 return None
             if self.JPS_map[self.start_from[1]][self.start_from[0]] >= self.obstacle_thread:
-                rospy.loginfo('cannot walk due to staying in a obstacle')
+                rospy.logwarn('cannot generate a plan due to staying in a obstacle')
                 return None
-            path = list()
+            path = None
             path = self.JPS_()
-            rospy.loginfo('JPS path done')
             self.Queue = PriorityQueue()
             self.start_from = None
             self.end_with = None
-            return self.get_full_path(path)
+            if path != None:
+                return self.get_full_path(path)
+            else:
+                rospy.logwarn('Unvalid Goal No Path founded')
+                return None
         else:
             rospy.loginfo('waiting for map... ')
             self.start_from = None
@@ -89,7 +90,6 @@ class JPS():
         _map = numpy.array(map_message.data)
         _map = _map.reshape(map_message.info.height, map_message.info.width)
         map = self.devergency(_map)
-        # print 'height', len(_map), 'width', len(_map[0])
         return map
 
     def devergency(self, map_message):
@@ -136,12 +136,11 @@ class JPS():
                 self.ADD_JUMPPOINT(self.explore_diagonal(node, -1, -1))
             except FoundPath:
                 return self.generate_path_jump_point()
-        # raise ValueError('No Path founded')
-
+            #else:
+                # raise ValueError('No Path founded')
 
     def ADD_JUMPPOINT(self, node):
         if node != None:
-            # print 'add node: ', node[0]*self.mapinfo.resolution+self.mapinfo.origin.position.x , node[1] * self.mapinfo.resolution + self.mapinfo.origin.position.y
             self.Queue.add_task(node, self.field[node[1]][node[0]] + numpy.sqrt((node[1] - self.end_with[1])**2 + (node[0] - self.end_with[0])**2))
             #self.Queue.add_task(node, self.field[node[1]][node[0]] + max((node[1] - self.end_with[1]), (node[0] - self.end_with[0])))
 
@@ -150,7 +149,6 @@ class JPS():
         cur_x = node[0]
         cur_y = node[1]
         cur_cost = self.field[node[1]][node[0]]
-        #print 'explore_diagonal cost', cur_cost
         while True:
             cur_x += direction_x
             cur_y += direction_y
@@ -163,9 +161,7 @@ class JPS():
                 self.sources[cur_y][cur_x] = node
                 raise FoundPath()
             else:
-                #print 'explore_diagonal: ', self.field[cur_y][cur_x]
                 return None
-            #if a jump point is found
             if self.field[cur_y][cur_x + direction_x] >= self.obstacle_thread and self.field[cur_y + direction_y][cur_x + direction_x] < self.obstacle_thread:
                 return (cur_x, cur_y)
             else:
@@ -193,7 +189,6 @@ class JPS():
                 self.sources[cur_y][cur_x] = node
                 raise FoundPath()
             else:
-                #print 'explore_cardinal: ', self.field[cur_y][cur_x]
                 return None
 
             if direction_x == 0:
@@ -209,36 +204,26 @@ class JPS():
 
 
     def generate_path_jump_point(self):
-        # print 'start generate_path_jump_point'
         path = []
         cur_x = self.end_with[0]
         cur_y = self.end_with[1]
-        # print 'end: ', cur_x,cur_y
-        # print 'start: ', self.start_from[0],self.start_from[1]
-        #raw_input('continue?')
         while cur_x != self.start_from[0] and cur_y != self.start_from[1]:
-            # if cur_y != None and cur_x != None:
             pose = PoseStamped()
             pose.pose.position.x = cur_x * self.mapinfo.resolution + self.mapinfo.origin.position.x
             pose.pose.position.y = cur_y * self.mapinfo.resolution + self.mapinfo.origin.position.y
             path.append(pose)
-            # print 'path length:', len(path), cur_x, cur_y
             (cur_x, cur_y) = self.sources[cur_y][cur_x]
-            #raw_input('continue?')
-
-
-        path.reverse()
-        startpose = [PoseStamped()]
-        startpose[0].pose.position.x = self.start_from[0] * self.mapinfo.resolution + self.mapinfo.origin.position.x
-        startpose[0].pose.position.y = self.start_from[1] * self.mapinfo.resolution + self.mapinfo.origin.position.y
-        path = startpose + path
-        # print 'get result'
-        # for i in path:
-        #     print i
-        return path
+        if len(path) > 1:
+            path.reverse()
+            startpose = [PoseStamped()]
+            startpose[0].pose.position.x = self.start_from[0] * self.mapinfo.resolution + self.mapinfo.origin.position.x
+            startpose[0].pose.position.y = self.start_from[1] * self.mapinfo.resolution + self.mapinfo.origin.position.y
+            path = startpose + path
+            return path
+        else:
+            return []
 
     def get_full_path(self, path):
-        rospy.loginfo('start get full path')
         if path == []:
             return []
         if path:
@@ -252,9 +237,8 @@ class JPS():
                         if abs(round(cur_pose.pose.position.y - path[i +1].pose.position.y, 2)) > 0.05:
                             cur_pose.pose.position.y += self._signum(path[i + 1].pose.position.y - path[i].pose.position.y)
                         result.append(copy.deepcopy(cur_pose))
-                        #print len(result)
-                rospy.loginfo('full path done')
                 return result
+        return []
 
 
     def _signum(self, n):
