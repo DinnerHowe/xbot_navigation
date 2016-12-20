@@ -17,6 +17,8 @@ import itertools
 from geometry_msgs.msg import PoseStamped
 import copy
 
+init = True
+
 class JPS():
     ##########################################################################################################
     # JUMP-POINT SEARCH                                                                                      #
@@ -83,15 +85,27 @@ class JPS():
     def get_map(self, map_message):
         self.mapinfo = map_message.info
         # self.JPS_map = self.generate_map(map_message)
-        self.generate_map(map_message)
+        global init
+        if init:
+            self.generate_map(map_message)
+        else:
+            self.rebuild_map(map_message)
+
+    def rebuild_map(self, map_message):
+        _map = numpy.array(map_message.data)
+        _map = _map.reshape(map_message.info.height, map_message.info.width)
+        init_map = [[j for j in i] for i in _map]
+        init_jps_map = self.JPS_map_init
+
 
     def generate_map(self, map_message):
         _map = numpy.array(map_message.data)
         _map = _map.reshape(map_message.info.height, map_message.info.width)
-        self.init_map = copy.deepcopy(_map.reshape(map_message.info.height, map_message.info.width))
+        self.init_map = [[j for j in i] for i in _map]
         # map = self.devergency(_map)
         # return map
-        self.JPS_map = self.devergency(_map)
+        self.JPS_map_init = self.devergency(_map)
+        self.JPS_map = [[j for j in i] for i in self.JPS_map_init]
 
     def devergency(self, map_message):
         map = copy.deepcopy(map_message)
