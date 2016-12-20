@@ -97,7 +97,7 @@ class grid_map():
   global ModifyElement
   for i in ModifyElement:
    if map.data[i] > 0 and self.init_map.data[i] != 100:
-    map.data[i] -= 5
+    map.data[i] -= 30
     if map.data[i] < 0:
      ModifyElement.remove(i)
      map.data[i] = 0

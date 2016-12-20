@@ -1,7 +1,7 @@
 <launch>
 
   <param name="use_sim_time" value="false" />
-  <arg name="custom_param_file" default="$(find nav_staff)/param/dummy.yaml"/>
+  <!-- <arg name="custom_param_file" default="$(find nav_staff)/param/dummy.yaml"/> -->
   
   <!-- Set the name of the map yaml file: can be overridden on the command line. -->
   <arg name="map_path" default="$(find nav_staff)/map/"/>
@@ -23,7 +23,7 @@
   
   <!--The real move base node-->
   <include file="$(find nav_staff)/launch/xml/move_base_xu.launch.xml">
-   <arg name="custom_param_file"       value="$(arg custom_param_file)"/>
+   <!-- <arg name="custom_param_file"       value="$(arg custom_param_file)"/> -->
   </include>
   
   <!-- Run fake localization compatible with AMCL output -->

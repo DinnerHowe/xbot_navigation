@@ -12,24 +12,26 @@ This programm is tested on kuboki base turtlebot.
 """
 import rospy
 from PlanAlgrithmsLib import AlgrithmsLib
+from PlanAlgrithmsLib import maplib
 import collections
 from geometry_msgs.msg import PointStamped
+from geometry_msgs.msg import Point
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Path
 from nav_msgs.msg import OccupancyGrid
 from threading import Lock
 import time
 
+
 timer = time.time()
 
 class ClearParams:
     def __init__(self):
         rospy.delete_param('~GoalTopic')
+        rospy.delete_param('~MapTopic')
         rospy.delete_param('~PlanTopic')
         rospy.delete_param('~PublishFrequency')
         rospy.delete_param('~OdomTopic')
-
-
 
 class Planner():
     def __init__(self):
@@ -47,7 +49,11 @@ class Planner():
 
     def PlanHandle(self, data):
         plan = Path()
-        plan.header = data.header
+        plan.header.seq = self.seq
+        self.seq += 1
+        plan.header.frame_id = 'map'
+        self.goal = Point()
+        self.goal = data.point
         end = data.point
         if self.odom != None:
             start = self.odom.pose.position
@@ -62,13 +68,35 @@ class Planner():
     def MapCB(self, map_message):
         with self.locker:
             self.JPS.get_map(map_message)
+            if self.PubPlan != Path():
+                if self.Pose_Checker(self.PubPlan.poses, map_message):
+                    rospy.logwarn('detect obstacles rebuild plan')
+                    plan = Path()
+                    plan.header.frame_id = 'map'
+                    plan.header.seq = self.seq
+                    self.seq += 1
+                    start = self.odom.pose.position
+                    plan.poses = self.JPS.get_path(self.goal, start)
+                    rospy.loginfo('re - generating a path')
+                    self.plans.append(plan)
+                    rospy.loginfo('re - generating path got')
+
+    def Pose_Checker(self, poses, map):
+        if poses != None and len(poses) > 1:
+            data_set = [i.pose.position for i in poses]
+            blocked = maplib.get_effective_point(map)[1]
+            results = [[True if (abs(j.x-i.x) < self.OscillationDistance or abs(j.y-i.y) < self.OscillationDistance) else False for j in blocked] for i in data_set]
+            result = [True if True in i else False for i in results]
+            if True in result:
+                return True
+            else:
+                return False
+        else:
+            return False
 
     def OdomCB(self, odom_message):
         with self.locker:
             self.odom = odom_message
-
-
-
 
     def PubPlanCB(self, event):
         with self.locker:
@@ -82,8 +110,8 @@ class Planner():
                     timer = time.time()
             if self.PubPlan != Path():
                 pub = rospy.Publisher(self.PlanTopic, Path, queue_size=1)
+                self.PubPlan.header.stamp = rospy.Time.now()
                 pub.publish(self.PubPlan)
-
 
     def define(self):
         if not rospy.has_param('~GoalTopic'):
@@ -106,6 +134,10 @@ class Planner():
              rospy.set_param('~OdomTopic', '/robot_position_in_map')
         self.OdomTopic = rospy.get_param('~OdomTopic')
 
+        if not rospy.has_param('~oscillation_distance'):
+             rospy.set_param('~oscillation_distance', 0.2)
+        self.OscillationDistance = rospy.get_param('~oscillation_distance')
+
         self.period = rospy.Duration(self.PublishFrequency)
         self.locker = Lock()
         self.plans = collections.deque(maxlen=1)
@@ -113,7 +145,7 @@ class Planner():
 
         self.JPS = AlgrithmsLib.JPS()
         self.odom = None
-
+        self.seq = 0
 
 
 if __name__=='__main__':
@@ -125,4 +157,3 @@ if __name__=='__main__':
          rospy.loginfo("process done and quit" )
      except rospy.ROSInterruptException:
          rospy.loginfo("node terminated.")
-

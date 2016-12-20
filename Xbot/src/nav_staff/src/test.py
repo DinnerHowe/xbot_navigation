@@ -43,7 +43,7 @@ class tester():
 
     def define(self):
         self.OBSTACLE = 100
-        self.devergency_scale = 8
+        self.devergency_scale = 6
         self.seq = 0
         self.plan = Path()
         self.end_ = None
@@ -165,8 +165,8 @@ if __name__=='__main__':
      rospy.init_node('Plan_tester')
      try:
          rospy.loginfo( "initialization system")
-         tester()
-         #tester2()
+         #tester()
+         tester2()
          rospy.loginfo("process done and quit" )
      except rospy.ROSInterruptException:
          rospy.loginfo("node terminated.")

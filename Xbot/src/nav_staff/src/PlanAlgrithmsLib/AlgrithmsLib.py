@@ -43,7 +43,7 @@ class JPS():
         self.OBSTACLE = 100
         self.ORIGIN = 0
         self.DESTINATION = -2
-        self.devergency_scale = 8
+        self.devergency_scale = 6
 
         self.Queue = PriorityQueue()
 
@@ -59,7 +59,7 @@ class JPS():
             if self.JPS_map[self.end_with[1]][self.end_with[0]] >= self.obstacle_thread:
                 rospy.logwarn('goal is not walkable, unable to generate a plan')
                 return None
-            if self.JPS_map[self.start_from[1]][self.start_from[0]] >= self.obstacle_thread:
+            if self.init_map[self.start_from[1]][self.start_from[0]] >= self.obstacle_thread:
                 rospy.logwarn('cannot generate a plan due to staying in a obstacle')
                 return None
             path = None
@@ -80,17 +80,18 @@ class JPS():
 
             return None
 
-
     def get_map(self, map_message):
         self.mapinfo = map_message.info
-        self.JPS_map = self.generate_map(map_message)
-
+        # self.JPS_map = self.generate_map(map_message)
+        self.generate_map(map_message)
 
     def generate_map(self, map_message):
         _map = numpy.array(map_message.data)
         _map = _map.reshape(map_message.info.height, map_message.info.width)
-        map = self.devergency(_map)
-        return map
+        self.init_map = copy.deepcopy(_map.reshape(map_message.info.height, map_message.info.width))
+        # map = self.devergency(_map)
+        # return map
+        self.JPS_map = self.devergency(_map)
 
     def devergency(self, map_message):
         map = copy.deepcopy(map_message)
