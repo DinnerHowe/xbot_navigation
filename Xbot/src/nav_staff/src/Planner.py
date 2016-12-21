@@ -72,6 +72,7 @@ class Planner():
                 if self.Pose_Checker(self.PubPlan.poses, map_message):
                     rospy.logwarn('detect obstacles rebuild plan')
                     plan = Path()
+                    self.plans.append(plan)
                     plan.header.frame_id = 'map'
                     plan.header.seq = self.seq
                     self.seq += 1
@@ -128,7 +129,7 @@ class Planner():
 
         if not rospy.has_param('~PublishFrequency'):
             rospy.set_param('~PublishFrequency', 0.001)
-        self.PublishFrequency = rospy.get_param('~PublishFrequency')
+        PublishFrequency = rospy.get_param('~PublishFrequency')
 
         if not rospy.has_param('~OdomTopic'):
              rospy.set_param('~OdomTopic', '/robot_position_in_map')
@@ -138,7 +139,7 @@ class Planner():
              rospy.set_param('~oscillation_distance', 0.2)
         self.OscillationDistance = rospy.get_param('~oscillation_distance')
 
-        self.period = rospy.Duration(self.PublishFrequency)
+        self.period = rospy.Duration(PublishFrequency)
         self.locker = Lock()
         self.plans = collections.deque(maxlen=1)
         self.PubPlan = Path()

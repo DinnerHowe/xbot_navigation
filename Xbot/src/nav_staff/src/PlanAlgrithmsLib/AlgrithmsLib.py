@@ -87,28 +87,23 @@ class JPS():
         # self.JPS_map = self.generate_map(map_message)
         global init
         if init:
+            init = False
             self.generate_map(map_message)
         else:
             self.rebuild_map(map_message)
 
-    def rebuild_map(self, map_message):
-        _map = numpy.array(map_message.data)
-        _map = _map.reshape(map_message.info.height, map_message.info.width)
-        init_map = [[j for j in i] for i in _map]
-        init_jps_map = self.JPS_map_init
-
-
     def generate_map(self, map_message):
         _map = numpy.array(map_message.data)
         _map = _map.reshape(map_message.info.height, map_message.info.width)
-        self.init_map = [[j for j in i] for i in _map]
+        self.init_map = [[j for j in i] for i in _map] #init raw map
         # map = self.devergency(_map)
         # return map
-        self.JPS_map_init = self.devergency(_map)
-        self.JPS_map = [[j for j in i] for i in self.JPS_map_init]
+        # self.JPS_map_init = self.devergency(_map)
+        # self.JPS_map = [[j for j in i] for i in self.JPS_map_init]
+        self.JPS_map = self.devergency(_map) #current devergencied map
 
     def devergency(self, map_message):
-        map = copy.deepcopy(map_message)
+        map = [[j for j in i] for i in map_message]
         for i in range(self.mapinfo.height):
             for j in range(self.mapinfo.width):
                 if map_message[i][j] == self.OBSTACLE:
@@ -128,8 +123,36 @@ class JPS():
                         if i - n >= 0 and j + n <= self.mapinfo.width-1:
                             map[i - n][j + n] = self.obstacle_thread
                             map[i][j + n] = self.obstacle_thread
-
         return map
+
+    def rebuild_map(self, map_message):
+        _map = numpy.array(map_message.data)
+        _map = _map.reshape(map_message.info.height, map_message.info.width)
+        update_map = [[j for j in i] for i in _map]
+        diff_sets = []
+        [[diff_sets.append((i,j)) if (self.init_map[i][j]!=update_map[i][j]) else 'check' for i in range(map_message.info.height)] for j in range(map_message.info.width)]
+        if diff_sets != []:
+            update_map = [[j for j in i] for i in self.JPS_map]
+            for i in diff_sets:
+                if update_map[i[0]][i[1]] >= self.obstacle_thread/2:
+                    for n in range(self.devergency_scale):
+                        if i[1] + n <= self.mapinfo.width-1 and i[0] + n <= self.mapinfo.height - 1:
+                            update_map[i[0] + n][i[1] + n] = self.obstacle_thread
+                            update_map[i[0] + n][i[1]] = self.obstacle_thread
+
+                        if i[0] - n >= 0 and i[1] - n >=0:
+                            update_map[i[0]- n][i[1] - n] = self.obstacle_thread
+                            update_map[i[0]- n][i[1]] = self.obstacle_thread
+
+                        if i[0]+ n <= self.mapinfo.height - 1 and i[1] - n >= 0:
+                            update_map[i[0]+ n][i[1] - n] = self.obstacle_thread
+                            update_map[i[0]][i[1] - n] = self.obstacle_thread
+
+                        if i[0]- n >= 0 and i[1] + n <= self.mapinfo.width-1:
+                            update_map[i[0]- n][i[1] + n] = self.obstacle_thread
+                            update_map[i[0]][i[1] + n] = self.obstacle_thread
+            self.JPS_map = update_map
+
 
     def JPS_(self):
         self.field = [[j for j in i] for i in self.JPS_map] # this takes less time than deep copying.
@@ -159,7 +182,6 @@ class JPS():
             self.Queue.add_task(node, self.field[node[1]][node[0]] + numpy.sqrt((node[1] - self.end_with[1])**2 + (node[0] - self.end_with[0])**2))
             #self.Queue.add_task(node, self.field[node[1]][node[0]] + max((node[1] - self.end_with[1]), (node[0] - self.end_with[0])))
 
-
     def explore_diagonal(self, node, direction_x, direction_y):
         cur_x = node[0]
         cur_y = node[1]
@@ -186,7 +208,6 @@ class JPS():
                 return (cur_x, cur_y)
             else:
                 self.ADD_JUMPPOINT(self.explore_straight((cur_x, cur_y), 0, direction_y))
-
 
     def explore_straight(self, node, direction_x, direction_y):
         cur_x = node[0]
@@ -216,7 +237,6 @@ class JPS():
                     return (cur_x, cur_y)
                 if self.field[cur_y - 1][cur_x] >= self.obstacle_thread and self.field[cur_y - 1][cur_x + direction_x] < self.obstacle_thread:
                     return (cur_x, cur_y)
-
 
     def generate_path_jump_point(self):
         path = []
@@ -254,7 +274,6 @@ class JPS():
                         result.append(copy.deepcopy(cur_pose))
                 return result
         return []
-
 
     def _signum(self, n):
         if n > 0:

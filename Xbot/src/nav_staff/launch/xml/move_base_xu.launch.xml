@@ -104,17 +104,17 @@
   <!--<arg name="GoalTopic"              default="/clicked_point" />-->
   <!--<arg name="PlanTopic"           default="/move_base/action_plan/jps" />-->
   <!--<arg name="OdomTopic"              default="/robot_position_in_map" />-->
-  <arg name="MapTopic"               default="/map" />
-  <arg name="PlanPublishFrequency"       default="0.001" />
+  <!--<arg name="MapTopic"               default="/map" />-->
+  <!--<arg name="PlanPublishFrequency"       default="0.001" />-->
 
- <node pkg="nav_staff" type="Planner.py" respawn="true" name="Planner" output="screen">
-  <param name="GoalTopic"            value="$(arg GoalTopic)"/>
-  <param name="MapTopic"             value="$(arg MapTopic)"/>
-  <param name="PlanTopic"            value="$(arg PlanTopic)"/>
-  <param name="PublishFrequency"     value="$(arg PlanPublishFrequency)"/>
-  <param name="OdomTopic"            value="$(arg OdomTopic)"/>
+ <!--<node pkg="nav_staff" type="Planner.py" respawn="true" name="Planner" output="screen">-->
+  <!--<param name="GoalTopic"            value="$(arg GoalTopic)"/>-->
+  <!--<param name="MapTopic"             value="$(arg MapTopic)"/>-->
+  <!--<param name="PlanTopic"            value="$(arg PlanTopic)"/>-->
+  <!--<param name="PublishFrequency"     value="$(arg PlanPublishFrequency)"/>-->
+  <!--<param name="OdomTopic"            value="$(arg OdomTopic)"/>-->
 
- </node>
+ <!--</node>-->
 
 
 </launch>
