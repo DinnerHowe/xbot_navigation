@@ -18,6 +18,7 @@ from threading import Lock
 import collections
 from geometry_msgs.msg import PoseArray
 from PlanAlgrithmsLib import maplib
+import copy
 
 
 ModifyElement = list()
@@ -36,7 +37,7 @@ class CostPlanMap():
         self.define()
         rospy.Subscriber(self.root_topic + '/projection', PoseArray, self.ReBuildMapCB, queue_size=1)
         rospy.Timer(self.period, self.PubCB)
-        rospy.Timer(rospy.Duration(5), self.Clear)
+        rospy.Timer((self.period * 400), self.Clear)
         rospy.spin()
 
     def define(self):
@@ -68,15 +69,18 @@ class CostPlanMap():
         self.Pubdata = collections.deque(maxlen=1)
 
         self.init_map = rospy.wait_for_message(use_map_topic, OccupancyGrid)
+        print 'get init map'
         self.mapinfo = self.init_map.info
+        self.JPS_map_init = []
         self.generate_map(self.init_map)
 
     def generate_map(self, map_message):
         _map = numpy.array(map_message.data)
         _map = _map.reshape(self.mapinfo.height, self.mapinfo.width)
-        self.JPS_map_init = self.devergency(_map)
-        JPS_map = [[j for j in i] for i in self.JPS_map_init]
-        self.Pubdata.append(JPS_map)
+        JPS_map_init = self.devergency(_map)
+        for j in range(self.mapinfo.height):
+            self.JPS_map_init.extend(JPS_map_init[j])
+        self.Pubdata.append(JPS_map_init)
         rospy.loginfo('Generate Init map')
         global init
         init = True
@@ -102,18 +106,23 @@ class CostPlanMap():
             global init
             if init:
                 if len(proj_msg.poses) > 0:
-                    JPS_map = [[j for j in i] for i in self.JPS_map_init]
+                    JPS_map = []
+                    JPS_map = self.JPS_map_init
+                    # JPS_map = [[j for j in i] for i in self.JPS_map_init]
                     for pose in proj_msg.poses:
                         num = maplib.position_num(self.init_map, pose.position)
-                        i = num/self.mapinfo.height
-                        j = num%self.mapinfo.height
-                        print 'i,j: ', i, j
-                        print '\nJPS_map[i][j]: ',len(JPS_map),len(JPS_map[0]), JPS_map[84]
-                        JPS_map[i][j] += 10
-                        if JPS_map[i][j] > 90:
-                            JPS_map[i][j] = 100
+                        # i = num/self.mapinfo.height
+                        # j = num%self.mapinfo.width
+                        # print 'i,j: ', i, j
+                        # print '\nJPS_map len: ',len(JPS_map), 'JPS_map[0] len: ', len(JPS_map[0]), '87: ', JPS_map[87]
+                        # JPS_map[i][j] += 10
+                        # if JPS_map[i][j] > 90:
+                        #     JPS_map[i][j] = 100
+                        JPS_map[num] += 10
+                        if JPS_map[num] >= 90:
+                            JPS_map[num] = 100
                         global ModifyElement
-                        if num in ModifyElement:
+                        if num not in ModifyElement:
                             ModifyElement.append(num)
                 self.Pubdata.append(JPS_map)
             else:
@@ -122,7 +131,7 @@ class CostPlanMap():
 
     def PubCB(self, event):
         with self.locker:
-            if len(self.Pubdata):
+            if len(self.Pubdata) > 0:
                 # time5 = time.time()
                 self.pub_map = OccupancyGrid()
                 self.pub_map.header.stamp = rospy.Time.now()
@@ -131,9 +140,11 @@ class CostPlanMap():
                 self.pub_map.header.frame_id = 'map'
                 self.pub_map.info = self.mapinfo
                 data = self.Pubdata.pop()
-                for j in range(self.mapinfo.height):
-                    # self.pub_map.data.append(data[j])
-                    self.pub_map.data.extend(data[j])
+                if len(data) == self.mapinfo.height * self.mapinfo.width:
+                    self.pub_map.data = data
+                else:
+                    for j in range(self.mapinfo.height):
+                        self.pub_map.data.extend(data[j])
                 # time6 = time.time()
                 # print '\nestablish map data spend: ', time6 - time5
                 pub = rospy.Publisher('/map_test', OccupancyGrid, queue_size=1)
@@ -141,6 +152,7 @@ class CostPlanMap():
                 rospy.loginfo('updata map')
             else:
                 pub = rospy.Publisher('/map_test', OccupancyGrid, queue_size=1)
+                self.pub_map.header.stamp = rospy.Time.now()
                 pub.publish(self.pub_map)
                 #rospy.loginfo('holding map')
 
@@ -148,17 +160,19 @@ class CostPlanMap():
         with self.locker:
             global init
             if init:
-                JPS_map = self.Fade(copy.deepcopy(self.pub_map))
-                self.Pubdata.append(JPS_map)
+                # rospy.loginfo('cleaning map')
+                self.pub_map = self.Fade(self.pub_map)
+                # self.Pubdata.append(self.JPS_map_init)
             else:
                 rospy.logwarn('waiting for init map')
 
     def Fade(self, map_msg):
+        # print 'fading'
         global ModifyElement
         for num in ModifyElement:
             if map_msg.data[num] > 0 and self.init_map.data[num] != 100:
-                map_msg.data[num] -= 30
-                if map_msg.data[num] < 0:
+                map_msg.data[num] -= 10
+                if map_msg.data[num] <= 1:
                     ModifyElement.remove(num)
                     map_msg.data[num] = 0
         return map_msg

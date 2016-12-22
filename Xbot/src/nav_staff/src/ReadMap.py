@@ -31,6 +31,7 @@ class ClearParams:
         rospy.delete_param('~frame_id')
         rospy.delete_param('~use_map_topic')
         rospy.delete_param('~root_topic')
+        rospy.delete_param('~publish_hz')
 
 class grid_map():
  def __init__(self):
@@ -41,8 +42,8 @@ class grid_map():
   self.segments = 50
 
   rospy.Subscriber(self.root_topic+'/projection', PoseArray , self.MessPoses, queue_size=1)
-  rospy.Timer(rospy.Duration(150000), self.Reload)
-  rospy.Timer(rospy.Duration(5), self.Clear)
+  rospy.Timer(self.period, self.Reload)
+  rospy.Timer((self.period * 400), self.Clear)
   self.AMCLMapSever()
   rospy.spin()
  
@@ -97,12 +98,11 @@ class grid_map():
   global ModifyElement
   for i in ModifyElement:
    if map.data[i] > 0 and self.init_map.data[i] != 100:
-    map.data[i] -= 30
+    map.data[i] -= 10
     if map.data[i] < 0:
      ModifyElement.remove(i)
      map.data[i] = 0
   return map
-
 
  def PubMetadata(self): 
   self.map_metadata.publish(self.Map.info)
@@ -128,6 +128,11 @@ class grid_map():
   if not rospy.has_param('~root_topic'):
    rospy.set_param('~root_topic','/test_obstacles')
 
+  if not rospy.has_param('~publish_hz'):
+   rospy.set_param('~publish_hz', 0.001)
+  publish_hz = rospy.get_param('~publish_hz')
+
+  self.period = rospy.Duration(publish_hz)
   self.origin_orientation = Quaternion()
   self.origin_orientation.w = -1
   
