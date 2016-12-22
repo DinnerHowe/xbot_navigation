@@ -43,7 +43,7 @@ class grid_map():
 
   rospy.Subscriber(self.root_topic+'/projection', PoseArray , self.MessPoses, queue_size=1)
   rospy.Timer(self.period, self.Reload)
-  rospy.Timer((self.period * 400), self.Clear)
+  rospy.Timer((self.period * 300), self.Clear)
   self.AMCLMapSever()
   rospy.spin()
  
@@ -64,8 +64,8 @@ class grid_map():
     #print 'MessPoses'
     for pose in poses.poses:
      num = maplib.position_num(self.init_map, pose.position)
-     self.Map.data[num] += 10
-     if self.Map.data[num] > 90:
+     self.Map.data[num] += 40
+     if self.Map.data[num] >= 90:
       self.Map.data[num] = 100
      global ModifyElement
      if num not in ModifyElement:
@@ -99,7 +99,7 @@ class grid_map():
   for i in ModifyElement:
    if map.data[i] > 0 and self.init_map.data[i] != 100:
     map.data[i] -= 10
-    if map.data[i] < 0:
+    if map.data[i] <= 0:
      ModifyElement.remove(i)
      map.data[i] = 0
   return map

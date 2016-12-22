@@ -124,15 +124,24 @@ class Server:
   
  def expand(self, data):
   origin = data[0]
-  pose = Pose()
+  poseP = Pose()
+  poseN = Pose()
   for i in range(5):
-   pose.position.y = origin.position.y + 0.05 * i
-   pose.position.y = origin.position.y - 0.05 * i
+   poseP.position.y = origin.position.y + 0.05 * i
+   poseN.position.y = origin.position.y - 0.05 * i
    for j in range(5):
-    pose.position.x = origin.position.x + 0.05 * j
-    data.append(copy.deepcopy(pose))
-    pose.position.x = origin.position.x - 0.05 * j
-    data.append(copy.deepcopy(pose))
+    poseP.position.x = origin.position.x + 0.05 * j
+    if poseP not in data:
+     data.append(copy.deepcopy(poseP))
+    poseP.position.x = origin.position.x - 0.05 * j
+    if poseP not in data:
+     data.append(copy.deepcopy(poseP))
+    poseN.position.x = origin.position.x + 0.05 * j
+    if poseN not in data:
+     data.append(copy.deepcopy(poseN))
+    poseN.position.x = origin.position.x - 0.05 * j
+    if poseN not in data:
+     data.append(copy.deepcopy(poseN))
   return data
    
         

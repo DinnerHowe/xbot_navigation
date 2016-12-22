@@ -37,7 +37,7 @@ class CostPlanMap():
         self.define()
         rospy.Subscriber(self.root_topic + '/projection', PoseArray, self.ReBuildMapCB, queue_size=1)
         rospy.Timer(self.period, self.PubCB)
-        rospy.Timer((self.period * 400), self.Clear)
+        rospy.Timer((self.period * 300), self.Clear)
         rospy.spin()
 
     def define(self):
@@ -106,25 +106,38 @@ class CostPlanMap():
             global init
             if init:
                 if len(proj_msg.poses) > 0:
-                    JPS_map = []
-                    JPS_map = self.JPS_map_init
-                    # JPS_map = [[j for j in i] for i in self.JPS_map_init]
+                    JPS_map = [i for i in self.JPS_map_init]
                     for pose in proj_msg.poses:
                         num = maplib.position_num(self.init_map, pose.position)
-                        # i = num/self.mapinfo.height
-                        # j = num%self.mapinfo.width
-                        # print 'i,j: ', i, j
-                        # print '\nJPS_map len: ',len(JPS_map), 'JPS_map[0] len: ', len(JPS_map[0]), '87: ', JPS_map[87]
-                        # JPS_map[i][j] += 10
-                        # if JPS_map[i][j] > 90:
-                        #     JPS_map[i][j] = 100
-                        JPS_map[num] += 10
-                        if JPS_map[num] >= 90:
-                            JPS_map[num] = 100
+                        for n in range(self.devergency_scale/2):
+                            #JPS_map[num] += 10
+                            # if JPS_map[num] >= 90:
+                            #     JPS_map[num] = 100
+                            JPS_map[num+n] += 10
+                            JPS_map[num-n] += 10
+                            JPS_map[num+n+n*self.mapinfo.width] += 20
+                            JPS_map[num+n-n*self.mapinfo.width] += 20
+                            JPS_map[num-n+n*self.mapinfo.width] += 30
+                            JPS_map[num-n-n*self.mapinfo.width] += 30
+
+                            if JPS_map[num+n] >= 90:
+                                JPS_map[num+n] = 100
+                            if JPS_map[num-n] >= 90:
+                                JPS_map[num-n] = 100
+                            if JPS_map[num+n+n*self.mapinfo.width] >= 90:
+                                JPS_map[num+n+n*self.mapinfo.width] = 100
+                            if JPS_map[num+n-n*self.mapinfo.width] >= 90:
+                                JPS_map[num+n-n*self.mapinfo.width] = 100
+                            if JPS_map[num-n+n*self.mapinfo.width] >= 90:
+                                JPS_map[num-n+n*self.mapinfo.width] = 100
+                            if JPS_map[num-n-n*self.mapinfo.width] >= 90:
+                                JPS_map[num-n-n*self.mapinfo.width] = 100
                         global ModifyElement
                         if num not in ModifyElement:
                             ModifyElement.append(num)
-                self.Pubdata.append(JPS_map)
+                    # for i in range(self.devergency_scale/2):
+                    #     print JPS_map[num + n],JPS_map[num-n],JPS_map[num+n+n*self.mapinfo.width],JPS_map[num+n-n*self.mapinfo.width],JPS_map[num-n+n*self.mapinfo.width],JPS_map[num-n-n*self.mapinfo.width]
+                    self.Pubdata.append(JPS_map)
             else:
                 rospy.logwarn('waiting for init map')
 
@@ -168,13 +181,59 @@ class CostPlanMap():
 
     def Fade(self, map_msg):
         # print 'fading'
+        CheckElements = []
         global ModifyElement
         for num in ModifyElement:
-            if map_msg.data[num] > 0 and self.init_map.data[num] != 100:
-                map_msg.data[num] -= 10
-                if map_msg.data[num] <= 1:
-                    ModifyElement.remove(num)
-                    map_msg.data[num] = 0
+            for n in range(self.devergency_scale / 2):
+                # map_msg.data[num] -= 10
+                if map_msg.data[num + n] > 0 and self.JPS_map_init[num + n] < self.obstacle_thread:
+                    if (num + n) not in CheckElements:
+                        CheckElements.append(num + n)
+                    map_msg.data[num + n] -= 10
+                    if map_msg.data[num + n] <= 0:
+                        map_msg.data[num + n] = 0
+
+                if map_msg.data[num - n] > 0 and self.JPS_map_init[num - n] < self.obstacle_thread:
+                    if (num - n) not in CheckElements:
+                        CheckElements.append(num - n)
+                    map_msg.data[num - n] -= 10
+                    if map_msg.data[num - n] <= 0:
+                        map_msg.data[num - n] = 0
+
+                if map_msg.data[num + n + n * self.mapinfo.width] > 0 and self.JPS_map_init[num + n + n * self.mapinfo.width] < self.obstacle_thread:
+                    if (num + n + n * self.mapinfo.width) not in CheckElements:
+                        CheckElements.append(num + n + n * self.mapinfo.width)
+                    map_msg.data[num + n + n * self.mapinfo.width] -= 10
+                    if map_msg.data[num + n + n * self.mapinfo.width] <= 0:
+                        map_msg.data[num + n + n * self.mapinfo.width] = 0
+
+                if map_msg.data[num + n - n * self.mapinfo.width] > 0 and self.JPS_map_init[num + n - n * self.mapinfo.width] < self.obstacle_thread:
+                    if (num + n - n * self.mapinfo.width) not in CheckElements:
+                        CheckElements.append(num + n - n * self.mapinfo.width)
+                    map_msg.data[num + n - n * self.mapinfo.width] -= 10
+                    if map_msg.data[num + n - n * self.mapinfo.width] <= 0:
+                        map_msg.data[num + n - n * self.mapinfo.width] = 0
+
+                if map_msg.data[num - n + n * self.mapinfo.width] > 0 and self.JPS_map_init[num - n + n * self.mapinfo.width] < self.obstacle_thread:
+                    if (num - n + n * self.mapinfo.width) not in CheckElements:
+                        CheckElements.append(num - n + n * self.mapinfo.width)
+                    map_msg.data[num - n + n * self.mapinfo.width] -= 10
+                    if map_msg.data[num - n + n * self.mapinfo.width] <= 0:
+                        map_msg.data[num - n + n * self.mapinfo.width] = 0
+
+                if map_msg.data[num - n - n * self.mapinfo.width] > 0 and self.JPS_map_init[num - n - n * self.mapinfo.width] < self.obstacle_thread:
+                    if (num - n - n * self.mapinfo.width) not in CheckElements:
+                        CheckElements.append(num - n - n * self.mapinfo.width)
+                    map_msg.data[num - n - n * self.mapinfo.width] -= 10
+                    if map_msg.data[num - n - n * self.mapinfo.width] <= 0:
+                        map_msg.data[num - n - n * self.mapinfo.width] = 0
+
+            result = [True if map_msg.data[num]==0 else False for num in CheckElements]
+            if False not in result:
+                ModifyElement.remove(num)
+            # if map_msg.data[num] == 0:
+            #     ModifyElement.remove(num)
+                #map_msg.data[num] = 0
         return map_msg
 
 if __name__=='__main__':
