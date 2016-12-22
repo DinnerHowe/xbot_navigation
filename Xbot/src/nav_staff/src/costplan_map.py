@@ -18,7 +18,6 @@ from threading import Lock
 import collections
 from geometry_msgs.msg import PoseArray
 from PlanAlgrithmsLib import maplib
-import copy
 
 
 ModifyElement = list()
@@ -60,6 +59,10 @@ class CostPlanMap():
         if not rospy.has_param('~publish_hz'):
             rospy.set_param('~publish_hz', 0.001)
         publish_hz = rospy.get_param('~publish_hz')
+
+        if not rospy.has_param('~pub_map_topic'):
+            rospy.set_param('~pub_map_topic', '/cost_plan_map')
+        self.pub_map_topic = rospy.get_param('~pub_map_topic')
 
         self.OBSTACLE = 100
         self.period = rospy.Duration(publish_hz)
@@ -135,12 +138,11 @@ class CostPlanMap():
                         global ModifyElement
                         if num not in ModifyElement:
                             ModifyElement.append(num)
-                    # for i in range(self.devergency_scale/2):
-                    #     print JPS_map[num + n],JPS_map[num-n],JPS_map[num+n+n*self.mapinfo.width],JPS_map[num+n-n*self.mapinfo.width],JPS_map[num-n+n*self.mapinfo.width],JPS_map[num-n-n*self.mapinfo.width]
+                    for i in range(self.devergency_scale/2):
+                        print JPS_map[num + n],JPS_map[num-n],JPS_map[num+n+n*self.mapinfo.width],JPS_map[num+n-n*self.mapinfo.width],JPS_map[num-n+n*self.mapinfo.width],JPS_map[num-n-n*self.mapinfo.width]
                     self.Pubdata.append(JPS_map)
             else:
                 rospy.logwarn('waiting for init map')
-
 
     def PubCB(self, event):
         with self.locker:
@@ -160,11 +162,11 @@ class CostPlanMap():
                         self.pub_map.data.extend(data[j])
                 # time6 = time.time()
                 # print '\nestablish map data spend: ', time6 - time5
-                pub = rospy.Publisher('/map_test', OccupancyGrid, queue_size=1)
+                pub = rospy.Publisher(self.pub_map_topic, OccupancyGrid, queue_size=1)
                 pub.publish(self.pub_map)
                 rospy.loginfo('updata map')
             else:
-                pub = rospy.Publisher('/map_test', OccupancyGrid, queue_size=1)
+                pub = rospy.Publisher(self.pub_map_topic, OccupancyGrid, queue_size=1)
                 self.pub_map.header.stamp = rospy.Time.now()
                 pub.publish(self.pub_map)
                 #rospy.loginfo('holding map')

@@ -6,10 +6,7 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
-        - /Map_2D1
-        - /Plan1
         - /Warning Flag1/Namespaces1
-        - /DepthCloud1
         - /DepthCloud1/Auto Size1
         - /Path1
         - /costplan_map1
@@ -60,11 +57,11 @@ Visualization Manager:
       Class: rviz/Map
       Color Scheme: map
       Draw Behind: false
-      Enabled: true
+      Enabled: false
       Name: Map_2D
       Topic: /map
       Unreliable: false
-      Value: true
+      Value: false
     - Class: rviz/Marker
       Enabled: false
       Marker Topic: /MAP_3D
@@ -405,7 +402,7 @@ Visualization Manager:
       Radius: 0.03
       Shaft Diameter: 0.1
       Shaft Length: 0.1
-      Topic: /move_base/action_plan
+      Topic: /move_base/action_plan/jps
       Unreliable: false
       Value: true
     - Alpha: 0.7
@@ -414,7 +411,7 @@ Visualization Manager:
       Draw Behind: false
       Enabled: true
       Name: costplan_map
-      Topic: /map_test
+      Topic: /cost_plan_map
       Unreliable: false
       Value: true
   Enabled: true
@@ -439,7 +436,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/ThirdPersonFollower
-      Distance: 12.1841
+      Distance: 21.4725
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
@@ -451,10 +448,10 @@ Visualization Manager:
         Z: -9.53676e-07
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 0.949796
+      Pitch: 0.729797
       Target Frame: <Fixed Frame>
       Value: ThirdPersonFollower (rviz)
-      Yaw: 1.7954
+      Yaw: 1.9204
     Saved: ~
 Window Geometry:
   Displays:

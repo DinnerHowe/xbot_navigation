@@ -43,51 +43,65 @@ class Planner():
         rospy.spin()
 
     def GoalCB(self, data):
-        with self.locker:
-            rospy.loginfo('get a new goal')
-            self.PlanHandle(data)
+        # with self.locker:
+        rospy.loginfo('get a new goal')
+        self.goal = data
+        self.PlanHandle(data)
 
     def PlanHandle(self, data):
-        plan = Path()
-        plan.header.seq = self.seq
-        self.seq += 1
-        plan.header.frame_id = 'map'
-        self.goal = Point()
-        self.goal = data.point
         end = data.point
         if self.odom != None:
-            start = self.odom.pose.position
-            rospy.loginfo('generating a path')
-            plan.poses = self.JPS.get_path(end, start)
-            if plan.poses != None:
+            plan = self.Generate_plan(end)
+            rospy.loginfo('generated a path')
+            if plan.poses != Path():
                 self.plans.append(plan)
                 rospy.loginfo('path got')
         else:
             rospy.loginfo('waiting for odom...')
 
+    def Generate_plan(self, end):
+        plan = Path()
+        plan.header.seq = self.seq
+        self.seq += 1
+        plan.header.frame_id = 'map'
+        start = self.odom.pose.position
+        plan.poses = self.JPS.get_path(end, start)
+        return plan
+
     def MapCB(self, map_message):
-        with self.locker:
-            self.JPS.get_map(map_message)
-            if self.PubPlan != Path():
-                if self.Pose_Checker(self.PubPlan.poses, map_message):
-                    rospy.logwarn('detect obstacles rebuild plan')
-                    plan = Path()
-                    self.plans.append(plan)
-                    plan.header.frame_id = 'map'
-                    plan.header.seq = self.seq
-                    self.seq += 1
-                    start = self.odom.pose.position
-                    plan.poses = self.JPS.get_path(self.goal, start)
-                    rospy.loginfo('re - generating a path')
-                    self.plans.append(plan)
-                    rospy.loginfo('re - generating path got')
+        # with self.locker:
+        # time1 = time.time()
+        self.JPS.get_map(map_message)
+        # time2 = time.time()
+        # print 'mapcb 1',time2-time1
+        if self.PubPlan != Path():
+            # print 'update map'
+            if self.Pose_Checker(self.PubPlan.poses, map_message):
+                # time3 = time.time()
+                # print 'mapcb 2', time3 - time2
+                rospy.logwarn('detect obstacles rebuild plan')
+                plan = self.Generate_plan(self.goal.point)
+                rospy.loginfo('re - generating a path')
+                # time4 = time.time()
+                # print 'mapcb 3', time4 - time3
+                self.plans.append(plan)
+            # time5 = time.time()
+            # print 'mapcb 4',time5-time4
 
     def Pose_Checker(self, poses, map):
         if poses != None and len(poses) > 1:
+            time1 = time.time()
             data_set = [i.pose.position for i in poses]
+            time2 = time.time()
+            print 'Pose_Checker 1: ', time2 - time1
             blocked = maplib.get_effective_point(map)[1]
-            results = [[True if (abs(j.x-i.x) < self.OscillationDistance or abs(j.y-i.y) < self.OscillationDistance) else False for j in blocked] for i in data_set]
-            result = [True if True in i else False for i in results]
+            time3 = time.time()
+            print 'Pose_Checker 2: ', time3 - time2
+            result = []
+            results = [[result.append(True) if (abs(j.x-i.x) < self.OscillationDistance or abs(j.y-i.y) < self.OscillationDistance) else result.append(False) for j in blocked] for i in data_set]
+            #result = [True if True in i else False for i in results]
+            time4 = time.time()
+            print 'Pose_Checker 3: ', time4 - time3
             if True in result:
                 return True
             else:
@@ -96,23 +110,23 @@ class Planner():
             return False
 
     def OdomCB(self, odom_message):
-        with self.locker:
-            self.odom = odom_message
+        # with self.locker:
+        self.odom = odom_message
 
     def PubPlanCB(self, event):
-        with self.locker:
-            if len(self.plans) != 0:
-                rospy.loginfo('update plan')
-                self.PubPlan = self.plans.pop()
-            else:
-                global timer
-                if time.time() - timer > 5:
-                    rospy.loginfo('waiting for new goal input')
-                    timer = time.time()
-            if self.PubPlan != Path():
-                pub = rospy.Publisher(self.PlanTopic, Path, queue_size=1)
-                self.PubPlan.header.stamp = rospy.Time.now()
-                pub.publish(self.PubPlan)
+        # with self.locker:
+        if len(self.plans) != 0:
+            rospy.loginfo('get new plan')
+            self.PubPlan = self.plans.pop()
+
+        if self.PubPlan.poses != []:
+            # rospy.loginfo('update plan')
+            pub = rospy.Publisher(self.PlanTopic, Path, queue_size=1)
+            self.PubPlan.header.stamp = rospy.Time.now()
+            self.PubPlan.header.seq = self.seq
+            self.seq += 1
+            pub.publish(self.PubPlan)
+        # print self.PubPlan
 
     def define(self):
         if not rospy.has_param('~GoalTopic'):
@@ -120,7 +134,7 @@ class Planner():
         self.GoalTopic = rospy.get_param('~GoalTopic')
 
         if not rospy.has_param('~MapTopic'):
-            rospy.set_param('~MapTopic', '/map')
+            rospy.set_param('~MapTopic', '/cost_plan_map')
         self.MapTopic = rospy.get_param('~MapTopic')
 
         if not rospy.has_param('~PlanTopic'):
@@ -128,7 +142,7 @@ class Planner():
         self.PlanTopic = rospy.get_param('~PlanTopic')
 
         if not rospy.has_param('~PublishFrequency'):
-            rospy.set_param('~PublishFrequency', 0.001)
+            rospy.set_param('~PublishFrequency', 0.01)
         PublishFrequency = rospy.get_param('~PublishFrequency')
 
         if not rospy.has_param('~OdomTopic'):
@@ -140,7 +154,7 @@ class Planner():
         self.OscillationDistance = rospy.get_param('~oscillation_distance')
 
         self.period = rospy.Duration(PublishFrequency)
-        self.locker = Lock()
+        # self.locker = Lock()
         self.plans = collections.deque(maxlen=1)
         self.PubPlan = Path()
 
@@ -148,6 +162,8 @@ class Planner():
         self.odom = None
         self.seq = 0
 
+        map_message = rospy.wait_for_message(self.MapTopic, OccupancyGrid)
+        self.JPS.get_map(map_message)
 
 if __name__=='__main__':
      rospy.init_node('Planner')
