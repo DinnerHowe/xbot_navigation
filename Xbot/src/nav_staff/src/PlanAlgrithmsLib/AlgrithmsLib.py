@@ -56,6 +56,9 @@ class JPS():
     def get_path(self, end, start):
         rospy.loginfo('starting gernerating plan')
         if self.JPS_map != None:
+            self.Queue = PriorityQueue()
+            self.start_from = None
+            self.end_with = None
             self.start_from = (int((start.x - self.mapinfo.origin.position.x)/ self.mapinfo.resolution), int((start.y - self.mapinfo.origin.position.y) / self.mapinfo.resolution))
             self.end_with = (int((end.x - self.mapinfo.origin.position.x) / self.mapinfo.resolution), int((end.y - self.mapinfo.origin.position.y) / self.mapinfo.resolution))
             if self.JPS_map[self.end_with[1]][self.end_with[0]] >= self.obstacle_thread:
@@ -66,20 +69,13 @@ class JPS():
                 return None
             path = None
             path = self.JPS_()
-            self.Queue = PriorityQueue()
-            self.start_from = None
-            self.end_with = None
             if path != None:
-                return self.get_full_path(path)
+                return (path, self.get_full_path(copy.deepcopy(path)))
             else:
                 rospy.logwarn('Unvalid Goal No Path founded')
                 return None
         else:
             rospy.loginfo('waiting for map... ')
-            self.start_from = None
-            self.end_with = None
-            self.Queue = PriorityQueue()
-
             return None
 
     def get_map(self, map_message):
@@ -193,7 +189,7 @@ class JPS():
         while True:
             cur_x += direction_x
             cur_y += direction_y
-            cur_cost += 1
+            cur_cost += 1.414
             if self.field[cur_y][cur_x] == self.UNINITIALIZED:
                 self.field[cur_y][cur_x] = cur_cost
                 self.sources[cur_y][cur_x] = node
@@ -220,7 +216,7 @@ class JPS():
         while True:
             cur_x += direction_x
             cur_y += direction_y
-            cur_cost += 1.414
+            cur_cost += 1
             if self.field[cur_y][cur_x] == self.UNINITIALIZED:
                 self.field[cur_y][cur_x] = cur_cost
                 self.sources[cur_y][cur_x] = node
@@ -230,16 +226,19 @@ class JPS():
                 raise FoundPath()
             else:
                 return None
-
             if direction_x == 0:
                 if self.field[cur_y][cur_x + 1] >= self.obstacle_thread and self.field[cur_y + direction_y][cur_x + 1] < self.obstacle_thread:
+                    # return (cur_x - 1, cur_y)
                     return (cur_x, cur_y)
                 if self.field[cur_y][cur_x - 1] >= self.obstacle_thread and self.field[cur_y + direction_y][cur_x - 1] < self.obstacle_thread:
+                    # return (cur_x + 1, cur_y)
                     return (cur_x, cur_y)
             if direction_y == 0 :
                 if self.field[cur_y + 1][cur_x] >= self.obstacle_thread and self.field[cur_y + 1][cur_x + direction_x] < self.obstacle_thread:
+                    # return (cur_x, cur_y - 1)
                     return (cur_x, cur_y)
                 if self.field[cur_y - 1][cur_x] >= self.obstacle_thread and self.field[cur_y - 1][cur_x + direction_x] < self.obstacle_thread:
+                    # return (cur_x, cur_y + 1)
                     return (cur_x, cur_y)
 
     def generate_path_jump_point(self):
@@ -247,17 +246,53 @@ class JPS():
         cur_x = self.end_with[0]
         cur_y = self.end_with[1]
         while cur_x != self.start_from[0] and cur_y != self.start_from[1]:
-            pose = PoseStamped()
-            pose.pose.position.x = cur_x * self.mapinfo.resolution + self.mapinfo.origin.position.x
-            pose.pose.position.y = cur_y * self.mapinfo.resolution + self.mapinfo.origin.position.y
-            path.append(pose)
-            (cur_x, cur_y) = self.sources[cur_y][cur_x]
+            if cur_x != None and cur_y != None:
+                pose = PoseStamped()
+                if cur_x - self.sources[cur_y][cur_x][0] == 0: #y move
+                    print 'y move'
+                    if self.field[cur_y][cur_x + 1] >= self.obstacle_thread:
+                        pose.pose.position.x = (cur_x) * self.mapinfo.resolution + self.mapinfo.origin.position.x - 0.05
+                        pose.pose.position.y = (cur_y) * self.mapinfo.resolution + self.mapinfo.origin.position.y
+                    if self.field[cur_y][cur_x - 1] >= self.obstacle_thread:
+                        pose.pose.position.x = (cur_x) * self.mapinfo.resolution + self.mapinfo.origin.position.x + 0.05
+                        pose.pose.position.y = (cur_y) * self.mapinfo.resolution + self.mapinfo.origin.position.y
+                elif cur_y - self.sources[cur_y][cur_x][1] == 0: #x move
+                    print 'x move'
+                    if self.field[cur_y + 1][cur_x] >= self.obstacle_thread:
+                        pose.pose.position.x = (cur_x) * self.mapinfo.resolution + self.mapinfo.origin.position.x
+                        pose.pose.position.y = (cur_y) * self.mapinfo.resolution + self.mapinfo.origin.position.y - 0.05
+                    if self.field[cur_y - 1][cur_x] >= self.obstacle_thread:
+                        pose.pose.position.x = (cur_x) * self.mapinfo.resolution + self.mapinfo.origin.position.x
+                        pose.pose.position.y = (cur_y) * self.mapinfo.resolution + self.mapinfo.origin.position.y + 0.05
+                # if cur_x - self.start_from[0] != 0 and cur_y - self.start_from[1] != 0: #diagnol move
+                #     if self.field[cur_y + 1][cur_x + 1] >= self.obstacle_thread:
+                #         pose.pose.position.x = (cur_x) * self.mapinfo.resolution + self.mapinfo.origin.position.x
+                #         pose.pose.position.y = (cur_y + 2) * self.mapinfo.resolution + self.mapinfo.origin.position.y
+                #     if self.field[cur_y + 1][cur_x - 1] >= self.obstacle_thread:
+                #         pose.pose.position.x = (cur_x + 1) * self.mapinfo.resolution + self.mapinfo.origin.position.x
+                #         pose.pose.position.y = (cur_y - 1) * self.mapinfo.resolution + self.mapinfo.origin.position.y
+                #     if self.field[cur_y - 1][cur_x + 1] >= self.obstacle_thread:
+                #         pose.pose.position.x = (cur_x) * self.mapinfo.resolution + self.mapinfo.origin.position.x
+                #         pose.pose.position.y = (cur_y + 2) * self.mapinfo.resolution + self.mapinfo.origin.position.y
+                #     if self.field[cur_y - 1][cur_x - 1] >= self.obstacle_thread:
+                #         pose.pose.position.x = (cur_x + 2) * self.mapinfo.resolution + self.mapinfo.origin.position.x
+                #         pose.pose.position.y = (cur_y) * self.mapinfo.resolution + self.mapinfo.origin.position.y
+                else:
+                    pose.pose.position.x = (cur_x) * self.mapinfo.resolution + self.mapinfo.origin.position.x
+                    pose.pose.position.y = (cur_y) * self.mapinfo.resolution + self.mapinfo.origin.position.y
+
+                # pose = PoseStamped()
+                # pose.pose.position.x = (cur_x) * self.mapinfo.resolution + self.mapinfo.origin.position.x
+                # pose.pose.position.y = (cur_y) * self.mapinfo.resolution + self.mapinfo.origin.position.y
+                path.append(pose)
+                (cur_x, cur_y) = self.sources[cur_y][cur_x]
         if len(path) > 1:
             path.reverse()
             startpose = [PoseStamped()]
             startpose[0].pose.position.x = self.start_from[0] * self.mapinfo.resolution + self.mapinfo.origin.position.x
             startpose[0].pose.position.y = self.start_from[1] * self.mapinfo.resolution + self.mapinfo.origin.position.y
             path = startpose + path
+            # print path
             return path
         else:
             return []
@@ -288,18 +323,18 @@ class JPS():
                         if abs(round(y, 2)) > 0.05:
                             y_increase = self._signum(path[i + 1].pose.position.y - path[i].pose.position.y)
                         # if path collision
-                        num = round((cur_pose.pose.position.x + x_increase) / self.mapinfo.resolution) + round(cur_pose.pose.position.y + y_increase / self.mapinfo.resolution) * self.mapinfo.width
-                        num = int(num)
-                        # print 'num: ', num
-                        if self.JPS_map[num] >= self.obstacle_thread:
-                            x_move = round((cur_pose.pose.position.x + x_increase) / self.mapinfo.resolution) + round(cur_pose.pose.position.y / self.mapinfo.resolution) * self.mapinfo.width
-                            # x_move = int(x_move)
-                            y_move = round((cur_pose.pose.position.x) / self.mapinfo.resolution) + round(cur_pose.pose.position.y + y_increase / self.mapinfo.resolution) * self.mapinfo.width
-                            # y_move = int(y_move)
-                            if self.JPS_map[x_move] < self.obstacle_thread:
-                                y_increase = 0
-                            if self.JPS_map[y_move] < self.obstacle_thread:
-                                x_increase = 0
+                        # num = round((cur_pose.pose.position.x + x_increase) / self.mapinfo.resolution) + round(cur_pose.pose.position.y + y_increase / self.mapinfo.resolution) * self.mapinfo.width
+                        # num = int(num)
+                        # # print 'num: ', num
+                        # if self.JPS_map[num] >= self.obstacle_thread:
+                        #     x_move = round((cur_pose.pose.position.x + x_increase) / self.mapinfo.resolution) + round(cur_pose.pose.position.y / self.mapinfo.resolution) * self.mapinfo.width
+                        #     x_move = int(x_move)
+                        #     y_move = round((cur_pose.pose.position.x) / self.mapinfo.resolution) + round(cur_pose.pose.position.y + y_increase / self.mapinfo.resolution) * self.mapinfo.width
+                        #     y_move = int(y_move)
+                        #     if self.JPS_map[x_move] < self.obstacle_thread:
+                        #         y_increase = 0
+                        #     if self.JPS_map[y_move] < self.obstacle_thread:
+                        #         x_increase = 0
 
                         cur_pose.pose.position.x += x_increase
                         cur_pose.pose.position.y += y_increase
@@ -313,9 +348,9 @@ class JPS():
 
     def _signum(self, n):
         if n > 0:
-            return 0.1
+            return 0.05
         elif n < 0:
-            return -0.1
+            return -0.05
         else:
             return 0
 

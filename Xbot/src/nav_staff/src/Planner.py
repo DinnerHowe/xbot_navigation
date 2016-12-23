@@ -65,7 +65,7 @@ class Planner():
         self.seq += 1
         plan.header.frame_id = 'map'
         start = self.odom.pose.position
-        plan.poses = self.JPS.get_path(end, start)
+        plan.poses = self.JPS.get_path(end, start)[1]
         return plan
 
     def MapCB(self, map_message):
@@ -150,7 +150,7 @@ class Planner():
         self.OdomTopic = rospy.get_param('~OdomTopic')
 
         if not rospy.has_param('~oscillation_distance'):
-             rospy.set_param('~oscillation_distance', 0.2)
+             rospy.set_param('~oscillation_distance', 0.0)
         self.OscillationDistance = rospy.get_param('~oscillation_distance')
 
         self.period = rospy.Duration(PublishFrequency)

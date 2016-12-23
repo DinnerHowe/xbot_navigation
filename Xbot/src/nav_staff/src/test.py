@@ -12,7 +12,10 @@ This programm is tested on kuboki base turtlebot.
 """
 import rospy
 from PlanAlgrithmsLib import AlgrithmsLib
+from PlanAlgrithmsLib import maplib
 from geometry_msgs.msg import PointStamped
+from geometry_msgs.msg import PoseStamped
+
 from nav_msgs.msg import Path
 from nav_msgs.msg import OccupancyGrid
 import copy
@@ -68,7 +71,7 @@ class tester():
             end = self.end_.point
             start = self.start_.point
             if self.result:
-                self.plan.poses = self.JPS.get_path(end, start)
+                self.plan.poses = self.JPS.get_path(end, start)[0]
                 if self.plan != [] and self.plan != None:
                     print 'the plan is :\n', self.plan.poses[0], self.plan.poses[-1]
         self.end_ = None
@@ -150,7 +153,7 @@ class tester2():
                 self.seq += 1
                 self.pub_map.header.frame_id = 'map'
                 self.pub_map.info = self.mapinfo
-                data =
+                # data =
                 for j in range(self.mapinfo.height):
                     self.pub_map.data.append(self.JPS_map[j])
                 # time6 = time.time()
@@ -266,12 +269,133 @@ class tester2():
         self.Pubdata.append(self.JPS_map)
 
 
+class tester3():
+    def __init__(self):
+        self.define()
+        rospy.Subscriber(self.GoalTopic, PointStamped, self.GoalCB)
+        rospy.Subscriber(self.MapTopic, OccupancyGrid, self.MapCB)
+        rospy.Subscriber(self.OdomTopic, PoseStamped, self.OdomCB)
+        rospy.Timer(self.period, self.PubPlanCB)
+        rospy.spin()
+
+    def GoalCB(self, data):
+        # with self.locker:
+        rospy.loginfo('get a new goal')
+        self.goal = data
+        self.PlanHandle(data)
+
+    def PlanHandle(self, data):
+        end = data.point
+        if self.odom != None:
+            plan = self.Generate_plan(end)
+            rospy.loginfo('generated a path')
+            if plan.poses != Path():
+                self.plans.append(plan)
+                rospy.loginfo('path got')
+        else:
+            rospy.loginfo('waiting for odom...')
+
+    def Generate_plan(self, end):
+        plan = Path()
+        plan.header.seq = self.seq
+        self.seq += 1
+        plan.header.frame_id = 'map'
+        start = self.odom.pose.position
+        plan.poses = self.JPS.get_path(end, start)[0]
+        return plan
+
+    def MapCB(self, map_message):
+        # with self.locker:
+        # time1 = time.time()
+        self.JPS.get_map(map_message)
+        # time2 = time.time()
+        # print 'mapcb 1',time2-time1
+        if self.PubPlan != Path():
+            # print 'update map'
+            if self.Pose_Checker(self.PubPlan.poses, map_message):
+                # time3 = time.time()
+                # print 'mapcb 2', time3 - time2
+                rospy.logwarn('detect obstacles rebuild plan')
+                plan = self.Generate_plan(self.goal.point)
+                rospy.loginfo('re - generating a path')
+                # time4 = time.time()
+                # print 'mapcb 3', time4 - time3
+                self.plans.append(plan)
+
+
+    def Pose_Checker(self, poses, map):
+        if poses != None and len(poses) > 1:
+            time1 = time.time()
+            data_set = [i.pose.position for i in poses]
+            time2 = time.time()
+            print 'Pose_Checker 1: ', time2 - time1
+            blocked = maplib.get_effective_point(map)[1]
+            time3 = time.time()
+            print 'Pose_Checker 2: ', time3 - time2
+            result = []
+            results = [[result.append(True) if (abs(j.x-i.x) < self.OscillationDistance or abs(j.y-i.y) < self.OscillationDistance) else result.append(False) for j in blocked] for i in data_set]
+            #result = [True if True in i else False for i in results]
+            time4 = time.time()
+            print 'Pose_Checker 3: ', time4 - time3
+            if True in result:
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    def OdomCB(self, odom_message):
+        # with self.locker:
+        self.odom = odom_message
+
+    def PubPlanCB(self, event):
+        # with self.locker:
+        if len(self.plans) != 0:
+            rospy.loginfo('get new plan')
+            self.PubPlan = self.plans.pop()
+
+        if self.PubPlan.poses != []:
+            # rospy.loginfo('update plan')
+            pub = rospy.Publisher(self.PlanTopic, Path, queue_size=1)
+            self.PubPlan.header.stamp = rospy.Time.now()
+            self.PubPlan.header.seq = self.seq
+            self.seq += 1
+            pub.publish(self.PubPlan)
+        # print self.PubPlan
+
+    def define(self):
+
+        self.GoalTopic = '/clicked_point'
+
+        self.MapTopic = '/cost_plan_map'
+
+        self.PlanTopic = '/move_base/action_plan/jps_jump_points'
+
+        PublishFrequency = 0.01
+
+        self.OdomTopic = '/robot_position_in_map'
+
+        self.OscillationDistance = 0.0
+
+        self.period = rospy.Duration(PublishFrequency)
+        # self.locker = Lock()
+        self.plans = collections.deque(maxlen=1)
+        self.PubPlan = Path()
+
+        self.JPS = AlgrithmsLib.JPS()
+        self.odom = None
+        self.seq = 0
+
+        map_message = rospy.wait_for_message(self.MapTopic, OccupancyGrid)
+        self.JPS.get_map(map_message)
+
 if __name__=='__main__':
      rospy.init_node('Plan_tester')
      try:
          rospy.loginfo( "initialization system")
          #tester()
-         tester2()
+         # tester2()
+         tester3()
          rospy.loginfo("process done and quit" )
      except rospy.ROSInterruptException:
          rospy.loginfo("node terminated.")

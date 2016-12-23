@@ -94,14 +94,31 @@ class CostPlanMap():
             for j in range(self.mapinfo.width):
                 if map_message[i][j] == self.OBSTACLE:
                     for n in range(self.devergency_scale):
-                        if j+n <= self.mapinfo.width-1:
+                        n += 1
+                        xp = j + n <= self.mapinfo.width-1
+                        xn = j - n >= 0
+                        yp = i + n <= self.mapinfo.height - 1
+                        yn = i - n >= 0
+                        if xp:
                             map[i][j + n] = self.obstacle_thread
-                        if j-n >= 0:
+                        if xn:
                             map[i][j - n] = self.obstacle_thread
-                        if i + n <= self.mapinfo.height - 1:
+                        if yp:
                             map[i + n][j] = self.obstacle_thread
-                        if i - n >= 0:
+                        if yn:
                             map[i - n][j] = self.obstacle_thread
+
+                        if xp and yp:
+                            map[i + n][j + n] = self.obstacle_thread
+                        if xp and yn:
+                            map[i - n][j + n] = self.obstacle_thread
+                        if xn and yp:
+                            map[i + n][j - n] = self.obstacle_thread
+                        if xn and yn:
+                            map[i - n][j - n] = self.obstacle_thread
+
+
+
         return map
 
     def ReBuildMapCB(self, proj_msg):
