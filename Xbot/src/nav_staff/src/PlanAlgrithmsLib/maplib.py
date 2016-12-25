@@ -30,51 +30,7 @@ def GradientDes(data):
   else:
    Features.append(data[i])
  return Features
- 
 
-# """def ProjectionCircle(data, info, origin):
-#  PoleData = []
-#  point = Point()
-#  originP = Point()
-#  ProjectionData = Point()
-#  ProjectionDataSet = []
-#  for j in data:
-#   angle = info.angle_min + info.angle_increment * j[1] - origin[0]
-#   point.x = j[0] * numpy.cos(angle) + origin[1]
-#   point.y = j[0] * numpy.sin(angle) + origin[2]
-#   PoleData.append(copy.deepcopy(point))
-#  radius = numpy.sqrt((PoleData[1].x - PoleData[0].x) ** 2 + (PoleData[1].y - PoleData[0].y) ** 2) / 2
-#  originP.x = (PoleData[3].x - PoleData[2].x) / 2 + PoleData[2].x
-#  originP.y = (PoleData[3].y - PoleData[2].y) / 2 + PoleData[2].y
-#  segments = 50
-#  unit = 2 * numpy.pi / segments
-#  for i in range(segments):
-#   ProjectionData.x = originP.x + r * numpy.cos(unit * i)
-#   ProjectionData.y = originP.y + r * numpy.sin(unit * i)
-#   ProjectionDataSet.append(copy.deepcopy(ProjectionData))
-#  return ProjectionDataSet"""
-#
-# """def ProjectionPole(data, info, origin):
-#  ## data = [Mindistance, Maxdistance, StartData, EndData]
-#  ## Mindistance = [distance, count]
-#  ## angle = angle_min + angle_increment * count - oriation_angle
-#  PoleData = []
-#  point = Point()
-#  #OriginPosition = Point()
-#  for j in data:
-#   #print j[1]
-#   angle = info.angle_min + info.angle_increment * j[1] - origin[0]
-#   point.x = j[0] * numpy.cos(angle) + origin[1]
-#   point.y = j[0] * numpy.sin(angle) + origin[2]
-#   PoleData.append(copy.deepcopy(point))
-#  radius = numpy.sqrt((PoleData[1].x - PoleData[0].x) ** 2 + (PoleData[1].y - PoleData[0].y) ** 2)# / 2
-#
-#  #OriginPosition.x = (PoleData[3].x - PoleData[2].x) / 2 + PoleData[2].x
-#  #OriginPosition.y = (PoleData[3].y - PoleData[2].y) / 2 + PoleData[2].y
-#  #return [OriginPosition, radius]
-#  return [PoleData, radius]"""
- 
- 
  ##转化坐标系
 def Trans(quaterion, Mapdata):
  theata = quat_to_angle([quaterion.x,quaterion.y,quaterion.z,quaterion.w])
@@ -107,27 +63,21 @@ def position_num(data, position):
 #返回有效区域的坐标集
 def get_effective_point(data):
  map_matrix=map_matrix_ranger(data)
- clear_area,block_area=[],[]
+ block_area=[]
  width=data.info.width
  height=data.info.height
  resolution=data.info.resolution
  map_origin=data.info.origin
- clear=Point()
  block=Point()
  centremap_cell=map_center_cell(map_origin,resolution)
  for y in range(height):
   for x in range(width):
-   if map_matrix[y][x] == 0:
-    clear.x=(x-centremap_cell[0])*resolution
-    clear.y=(y-centremap_cell[1])*resolution + resolution
-    clear_area.append(clear)
    if map_matrix[y][x] >= 50:
     block.x=(x-centremap_cell[0])*resolution
     block.y=(y-centremap_cell[1])*resolution + resolution
     block_area.append(block)
-   clear=Point()
    block=Point()
- return [clear_area,block_area]
+ return block_area
  
 #返回地图矩阵
 def map_matrix_ranger(data):

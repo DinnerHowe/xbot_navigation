@@ -24,7 +24,7 @@
   <!--The real move base node-->
   <include file="$(find nav_staff)/launch/xml/move_base_xu.launch.xml">
    <!-- <arg name="custom_param_file"       value="$(arg custom_param_file)"/> -->
-  </include>
+  </include> 
   
   <!-- Run fake localization compatible with AMCL output -->
   <node pkg="fake_localization" type="fake_localization" name="fake_amcl" output="screen" />

@@ -1,0 +1,17 @@
+<launch>
+    <arg name="obstacle_thread"     value="80"/>
+    <arg name="root_topic"          value="/test_obstacles"/>
+    <arg name="devergency_scale"    value="5"/>
+    <arg name="use_map_topic"       value="/map"/>
+    <arg name="publish_hz"          value="0.001"/>
+    <arg name="use_plan_map_topic"  value="/cost_plan_map"/>
+
+    <node pkg="nav_staff" type="costplan_map.py" respawn="true" name="cost_map" output="screen">
+        <param name="obstacle_thread"       value="$(arg obstacle_thread)"/>
+        <param name="root_topic"            value="$(arg root_topic)"/>
+        <param name="devergency_scale"      value="$(arg devergency_scale)"/>
+        <param name="use_map_topic"         value="$(arg use_map_topic)"/>
+        <param name="publish_hz"            value="$(arg publish_hz)"/>
+        <param name="use_plan_map_topic"    value="$(arg use_plan_map_topic)"/>
+    </node>
+</launch>

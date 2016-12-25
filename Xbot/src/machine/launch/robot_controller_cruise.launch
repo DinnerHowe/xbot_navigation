@@ -1,8 +1,4 @@
-<launch> 
-
- <!--启动导航目标策略-->
- <include file="$(find amcl_odom)/launch/turtlebot_position_in_map.launch" />
-   
+<launch>    
  <!--启动导航目标策略-->
  <include file="$(find tasks)/launch/cruise_tasks.launch" />
  

@@ -73,7 +73,8 @@ class tester():
             if self.result:
                 self.plan.poses = self.JPS.get_path(end, start)[0]
                 if self.plan != [] and self.plan != None:
-                    print 'the plan is :\n', self.plan.poses[0], self.plan.poses[-1]
+                    # print 'the plan is :\n', self.plan.poses[0], self.plan.poses[-1]
+                    passs
         self.end_ = None
         self.start_ = None
             #cont = raw_input('按q退出，按其他任意键继续')
@@ -172,13 +173,13 @@ class tester2():
                 time1 = time.time()
                 self.generate_map(map_message)
                 time2 = time.time()
-                print 'init generate map spend: ', time2 - time1
+                # print 'init generate map spend: ', time2 - time1
             else:
                 rospy.loginfo('rebuild generate map')
                 time3 = time.time()
                 self.rebuild_map(map_message)
                 time4 = time.time()
-                print '\nre--generate map spend: ', time4 - time3
+                # print '\nre--generate map spend: ', time4 - time3
 
     def generate_map(self, map_message):
         _map = numpy.array(map_message.data)
@@ -301,7 +302,7 @@ class tester3():
         self.seq += 1
         plan.header.frame_id = 'map'
         start = self.odom.pose.position
-        plan.poses = self.JPS.get_path(end, start)[0]
+        plan.poses = self.JPS.get_path(end, start)
         return plan
 
     def MapCB(self, map_message):
@@ -328,15 +329,15 @@ class tester3():
             time1 = time.time()
             data_set = [i.pose.position for i in poses]
             time2 = time.time()
-            print 'Pose_Checker 1: ', time2 - time1
+            # print 'Pose_Checker 1: ', time2 - time1
             blocked = maplib.get_effective_point(map)[1]
             time3 = time.time()
-            print 'Pose_Checker 2: ', time3 - time2
+            # print 'Pose_Checker 2: ', time3 - time2
             result = []
             results = [[result.append(True) if (abs(j.x-i.x) < self.OscillationDistance or abs(j.y-i.y) < self.OscillationDistance) else result.append(False) for j in blocked] for i in data_set]
             #result = [True if True in i else False for i in results]
             time4 = time.time()
-            print 'Pose_Checker 3: ', time4 - time3
+            # print 'Pose_Checker 3: ', time4 - time3
             if True in result:
                 return True
             else:

@@ -30,13 +30,14 @@ class ClearParams:
         rospy.delete_param('~devergency_scale')
         rospy.delete_param('~use_map_topic')
         rospy.delete_param('~publish_hz')
+        rospy.delete_param('~use_plan_map_topic')
 
 class CostPlanMap():
     def __init__(self):
         self.define()
         rospy.Subscriber(self.root_topic + '/projection', PoseArray, self.ReBuildMapCB, queue_size=1)
         rospy.Timer(self.period, self.PubCB)
-        rospy.Timer((self.period * 300), self.Clear)
+        rospy.Timer((self.period * 30), self.Clear)
         rospy.spin()
 
     def define(self):
@@ -57,12 +58,12 @@ class CostPlanMap():
         use_map_topic = rospy.get_param('~use_map_topic')
 
         if not rospy.has_param('~publish_hz'):
-            rospy.set_param('~publish_hz', 0.001)
+            rospy.set_param('~publish_hz', 0.01)
         publish_hz = rospy.get_param('~publish_hz')
 
-        if not rospy.has_param('~pub_map_topic'):
-            rospy.set_param('~pub_map_topic', '/cost_plan_map')
-        self.pub_map_topic = rospy.get_param('~pub_map_topic')
+        if not rospy.has_param('~use_plan_map_topic'):
+            rospy.set_param('~use_plan_map_topic', '/cost_plan_map')
+        self.pub_map_topic = rospy.get_param('~use_plan_map_topic')
 
         self.OBSTACLE = 100
         self.period = rospy.Duration(publish_hz)
@@ -72,7 +73,7 @@ class CostPlanMap():
         self.Pubdata = collections.deque(maxlen=1)
 
         self.init_map = rospy.wait_for_message(use_map_topic, OccupancyGrid)
-        print 'get init map'
+        # print 'get init map'
         self.mapinfo = self.init_map.info
         self.JPS_map_init = []
         self.generate_map(self.init_map)
@@ -182,10 +183,10 @@ class CostPlanMap():
                 pub = rospy.Publisher(self.pub_map_topic, OccupancyGrid, queue_size=1)
                 pub.publish(self.pub_map)
                 rospy.loginfo('updata map')
-            else:
-                pub = rospy.Publisher(self.pub_map_topic, OccupancyGrid, queue_size=1)
-                self.pub_map.header.stamp = rospy.Time.now()
-                pub.publish(self.pub_map)
+            # else:
+            #     pub = rospy.Publisher(self.pub_map_topic, OccupancyGrid, queue_size=1)
+            #     self.pub_map.header.stamp = rospy.Time.now()
+            #     pub.publish(self.pub_map)
                 #rospy.loginfo('holding map')
 
     def Clear(self, event):
