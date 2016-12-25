@@ -59,12 +59,16 @@ class JPS():
             self.Queue = PriorityQueue()
             self.start_from = None
             self.end_with = None
-            self.start_from = (int((start.x - self.mapinfo.origin.position.x)/ self.mapinfo.resolution), int((start.y - self.mapinfo.origin.position.y) / self.mapinfo.resolution))
-            self.end_with = (int((end.x - self.mapinfo.origin.position.x) / self.mapinfo.resolution), int((end.y - self.mapinfo.origin.position.y) / self.mapinfo.resolution))
-            if self.JPS_map[self.end_with[1]][self.end_with[0]] >= self.obstacle_thread:
+            # self.start_from = (int((start.x - self.mapinfo.origin.position.x)/ self.mapinfo.resolution), int((start.y - self.mapinfo.origin.position.y) / self.mapinfo.resolution))
+            # self.end_with = (int((end.x - self.mapinfo.origin.position.x) / self.mapinfo.resolution), int((end.y - self.mapinfo.origin.position.y) / self.mapinfo.resolution))
+            self.start_from = (int((start.x - self.mapinfo.origin.position.x)/ self.mapinfo.resolution) + int((start.y - self.mapinfo.origin.position.y) / self.mapinfo.resolution) * self.mapinfo.width)
+            self.end_with = (int((end.x - self.mapinfo.origin.position.x) / self.mapinfo.resolution) + int((end.y - self.mapinfo.origin.position.y) / self.mapinfo.resolution) * self.mapinfo.width)
+            # if self.JPS_map[self.end_with[1]][self.end_with[0]] >= self.obstacle_thread:
+            if self.JPS_map(self.end_with) >= self.obstacle_thread:
                 rospy.logwarn('goal is not walkable, unable to generate a plan')
                 return None
-            if self.JPS_map[self.start_from[1]][self.start_from[0]] >= self.obstacle_thread:
+            # if self.JPS_map[self.start_from[1]][self.start_from[0]] >= self.obstacle_thread:
+            if self.JPS_map(self.start_from) >= self.obstacle_thread:
                 rospy.logwarn('cannot generate a plan due to staying in a obstacle')
                 return None
             path = None
@@ -81,15 +85,25 @@ class JPS():
 
     def get_map(self, map_message):
         self.mapinfo = map_message.info
-        _map = numpy.array(map_message.data)
-        _map = _map.reshape(self.mapinfo.height, self.mapinfo.width)
-        self.JPS_map = [[j for j in i] for i in _map]
+        # _map = numpy.array(map_message.data)
+        # _map = _map.reshape(self.mapinfo.height, self.mapinfo.width)
+        # self.JPS_map = [[j for j in i] for i in _map]
+        self.JPS_map = map_message.data
 
     def JPS_(self):
-        self.field = [[j for j in i] for i in self.JPS_map] # this takes less time than deep copying.
-        self.sources = [[(None, None) for i in j] for j in self.field]  # the jump-point predecessor to each point.
-        self.field[self.start_from[1]][self.start_from[0]] = self.ORIGIN
-        self.field[self.end_with[1]][self.end_with[0]] = self.DESTINATION
+        # self.field = [[j for j in i] for i in self.JPS_map] # this takes less time than deep copying.
+        # self.field[self.start_from[1]][self.start_from[0]] = self.ORIGIN
+        # self.field[self.end_with[1]][self.end_with[0]] = self.DESTINATION
+        # self.sources = [[(None, None) for i in j] for j in self.field]  # the jump-point predecessor to each point.
+
+        self.field = [i for i in self.JPS_map]
+        self.field[self.start_from] = self.ORIGIN
+        self.field[self.end_with] = self.DESTINATION
+        self.sources = [i for i in self.JPS_map]
+        
+        #######################################################
+        ###### 改剩下的 self.field 和 self.sources 数据格式 #####
+        #######################################################
         self.ADD_JUMPPOINT(self.start_from)
         while not self.Queue.empty():
             node = self.Queue.pop_task()
@@ -203,10 +217,8 @@ class JPS():
                         if self.field[int((cur_pose.pose.position.y + y_increase - self.mapinfo.origin.position.y)/ self.mapinfo.resolution)][int((cur_pose.pose.position.x + x_increase - self.mapinfo.origin.position.x)/ self.mapinfo.resolution)] >= self.obstacle_thread:
                             if self.field[int((cur_pose.pose.position.y + y_increase - self.mapinfo.origin.position.y)/ self.mapinfo.resolution)][int((cur_pose.pose.position.x - self.mapinfo.origin.position.x)/ self.mapinfo.resolution)] >= self.obstacle_thread:
                                 cur_pose.pose.position.y += y_increase
-                            elif self.field[int((cur_pose.pose.position.y - self.mapinfo.origin.position.y) / self.mapinfo.resolution)][int((cur_pose.pose.position.x + x_increase - self.mapinfo.origin.position.x) / self.mapinfo.resolution)] >= self.obstacle_thread:
+                            if self.field[int((cur_pose.pose.position.y - self.mapinfo.origin.position.y) / self.mapinfo.resolution)][int((cur_pose.pose.position.x + x_increase - self.mapinfo.origin.position.x) / self.mapinfo.resolution)] >= self.obstacle_thread:
                                 cur_pose.pose.position.x += x_increase
-                            else:
-                                print '????????????'
                         else:
                             cur_pose.pose.position.x += x_increase
                             cur_pose.pose.position.y += y_increase
