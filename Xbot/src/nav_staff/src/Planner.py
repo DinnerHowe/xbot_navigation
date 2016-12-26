@@ -60,7 +60,7 @@ class Planner():
                 plans.append(plan)
                 self.odom = None
         else:
-            rospy.loginfo('waiting for odom...')
+            rospy.logwarn('waiting for odom...')
         time2 = time.time()
         print '\ngoalcb:           ', time2 - time1, '\n'
 
@@ -176,8 +176,8 @@ class Planner():
         self.odom = None
         self.seq = 0
 
-        map_message = rospy.wait_for_message(self.MapTopic, OccupancyGrid)
-        self.JPS.get_map(map_message)
+        # map_message = rospy.wait_for_message(self.MapTopic, OccupancyGrid)
+        # self.JPS.get_map(map_message)
 
 if __name__=='__main__':
      rospy.init_node('Planner')

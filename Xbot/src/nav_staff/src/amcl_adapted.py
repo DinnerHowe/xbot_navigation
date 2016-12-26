@@ -137,7 +137,6 @@ class AMCL():
         self.init_pose.pose.orientation.y = rot[1]
         self.init_pose.pose.orientation.z = rot[2]
         self.init_pose.pose.orientation.w = rot[3]
-
         return
 
     def PubInitPose(self, pose_msg):
@@ -160,8 +159,6 @@ class AMCL():
         self.current_pose.pose.orientation.y += data.pose.pose.orientation.y
         self.current_pose.pose.orientation.z += data.pose.pose.orientation.z
         self.current_pose.pose.orientation.w += data.pose.pose.orientation.w
-
-
 
     def define(self):
         if not rospy.has_param('~use_map_topic'):

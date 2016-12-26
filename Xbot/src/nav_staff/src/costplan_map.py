@@ -18,6 +18,7 @@ from threading import Lock
 import collections
 from geometry_msgs.msg import PoseArray
 from PlanAlgrithmsLib import maplib
+from nav_msgs.srv import *
 
 
 ModifyElement = list()
@@ -37,7 +38,8 @@ class CostPlanMap():
         self.define()
         rospy.Subscriber(self.root_topic + '/projection', PoseArray, self.ReBuildMapCB, queue_size=1)
         rospy.Timer(self.period, self.PubCB)
-        rospy.Timer((self.period * 30), self.Clear)
+        # rospy.Timer((self.period * 30), self.Clear)
+        self.AMCLMapSever()
         rospy.spin()
 
     def define(self):
@@ -79,48 +81,127 @@ class CostPlanMap():
         self.generate_map(self.init_map)
 
     def generate_map(self, map_message):
-        _map = numpy.array(map_message.data)
-        _map = _map.reshape(self.mapinfo.height, self.mapinfo.width)
-        JPS_map_init = self.devergency(_map)
-        for j in range(self.mapinfo.height):
-            self.JPS_map_init.extend(JPS_map_init[j])
+        JPS_map_init = self.devergency(map_message.data)
+        self.JPS_map_init = [i for i in JPS_map_init]
         self.Pubdata.append(JPS_map_init)
         rospy.loginfo('Generate Init map')
         global init
         init = True
 
     def devergency(self, map_message):
-        map = [[j for j in i] for i in map_message]
-        for i in range(self.mapinfo.height):
-            for j in range(self.mapinfo.width):
-                if map_message[i][j] == self.OBSTACLE:
-                    for n in range(self.devergency_scale):
-                        n += 1
-                        xp = j + n <= self.mapinfo.width-1
-                        xn = j - n >= 0
-                        yp = i + n <= self.mapinfo.height - 1
-                        yn = i - n >= 0
-                        if xp:
-                            map[i][j + n] = self.obstacle_thread
-                        if xn:
-                            map[i][j - n] = self.obstacle_thread
-                        if yp:
-                            map[i + n][j] = self.obstacle_thread
-                        if yn:
-                            map[i - n][j] = self.obstacle_thread
+        map_ = [i for i in map_message]
+        for num in range(len(map_message)):
+            j = num % self.mapinfo.width
+            i = num / self.mapinfo.width
+            if map_message[num] == self.OBSTACLE:
+                for n in range(self.devergency_scale)[1:]:
+                    xp = j + n <= self.mapinfo.width - 1
+                    xn = j - n >= 0
+                    yp = i + n <= self.mapinfo.height - 1
+                    yn = i - n >= 0
+                    if xp and xn and yp and yn:
+                        if map_[i*self.mapinfo.width + j + n] < self.obstacle_thread:
+                            map_[i*self.mapinfo.width + j + n] = self.obstacle_thread
+                        if map_[i*self.mapinfo.width + j - n] < self.obstacle_thread:
+                            map_[i*self.mapinfo.width + j - n] = self.obstacle_thread
+                        if map_[(i + n)*self.mapinfo.width + j] < self.obstacle_thread:
+                            map_[(i + n)*self.mapinfo.width + j] = self.obstacle_thread
+                        if map_[(i - n)*self.mapinfo.width + j] < self.obstacle_thread:
+                            map_[(i - n)*self.mapinfo.width + j] = self.obstacle_thread
+                        if map_[(i + n)*self.mapinfo.width + j + n] < self.obstacle_thread:
+                            map_[(i + n)*self.mapinfo.width + j + n] = self.obstacle_thread
+                        if map_[(i - n)*self.mapinfo.width + j + n] < self.obstacle_thread:
+                            map_[(i - n)*self.mapinfo.width + j + n] = self.obstacle_thread
+                        if map_[(i + n)*self.mapinfo.width + j - n] < self.obstacle_thread:
+                            map_[(i + n)*self.mapinfo.width + j - n] = self.obstacle_thread
+                        if map_[(i - n)*self.mapinfo.width + j - n] < self.obstacle_thread:
+                            map_[(i - n)*self.mapinfo.width + j - n] = self.obstacle_thread
 
-                        if xp and yp:
-                            map[i + n][j + n] = self.obstacle_thread
-                        if xp and yn:
-                            map[i - n][j + n] = self.obstacle_thread
-                        if xn and yp:
-                            map[i + n][j - n] = self.obstacle_thread
-                        if xn and yn:
-                            map[i - n][j - n] = self.obstacle_thread
+                    elif not xn and xp and yn and yp:
+                        if map_[i*self.mapinfo.width + j + n] < self.obstacle_thread:
+                            map_[i*self.mapinfo.width + j + n] = self.obstacle_thread
+                        if map_[(i + n)*self.mapinfo.width + j] < self.obstacle_thread:
+                            map_[(i + n)*self.mapinfo.width + j] = self.obstacle_thread
+                        if map_[(i - n)*self.mapinfo.width + j] < self.obstacle_thread:
+                            map_[(i - n)*self.mapinfo.width + j] = self.obstacle_thread
+                        if map_[(i + n)*self.mapinfo.width + j + n] < self.obstacle_thread:
+                            map_[(i + n)*self.mapinfo.width + j + n] = self.obstacle_thread
+                        if map_[(i - n)*self.mapinfo.width + j + n] < self.obstacle_thread:
+                            map_[(i - n)*self.mapinfo.width + j + n] = self.obstacle_thread
 
+                    elif not xp and xn and yn and yp:
+                        if map_[i*self.mapinfo.width + j - n] < self.obstacle_thread:
+                            map_[i*self.mapinfo.width + j - n] = self.obstacle_thread
+                        if map_[(i + n)*self.mapinfo.width + j] < self.obstacle_thread:
+                            map_[(i + n)*self.mapinfo.width + j] = self.obstacle_thread
+                        if map_[(i - n)*self.mapinfo.width + j] < self.obstacle_thread:
+                            map_[(i - n)*self.mapinfo.width + j] = self.obstacle_thread
+                        if map_[(i + n)*self.mapinfo.width + j - n] < self.obstacle_thread:
+                            map_[(i + n)*self.mapinfo.width + j - n] = self.obstacle_thread
+                        if map_[(i - n)*self.mapinfo.width + j - n] < self.obstacle_thread:
+                            map_[(i - n)*self.mapinfo.width + j - n] = self.obstacle_thread
 
+                    elif not yn and yp and xn and xp:
+                        if map_[i*self.mapinfo.width + j + n] < self.obstacle_thread:
+                            map_[i*self.mapinfo.width + j + n] = self.obstacle_thread
+                        if map_[i*self.mapinfo.width + j - n] < self.obstacle_thread:
+                            map_[i*self.mapinfo.width + j - n] = self.obstacle_thread
+                        if map_[(i + n)*self.mapinfo.width + j] < self.obstacle_thread:
+                            map_[(i + n)*self.mapinfo.width + j] = self.obstacle_thread
+                        if map_[(i + n)*self.mapinfo.width + j + n] < self.obstacle_thread:
+                            map_[(i + n)*self.mapinfo.width + j + n] = self.obstacle_thread
+                        if map_[(i + n)*self.mapinfo.width + j - n] < self.obstacle_thread:
+                            map_[(i + n)*self.mapinfo.width + j - n] = self.obstacle_thread
 
-        return map
+                    elif not yp and yn and xn and xp:
+                        if map_[i*self.mapinfo.width + j + n] < self.obstacle_thread:
+                            map_[i*self.mapinfo.width + j + n] = self.obstacle_thread
+                        if map_[i*self.mapinfo.width + j - n] < self.obstacle_thread:
+                            map_[i*self.mapinfo.width + j - n] = self.obstacle_thread
+                        if map_[(i - n)*self.mapinfo.width + j] < self.obstacle_thread:
+                            map_[(i - n)*self.mapinfo.width + j] = self.obstacle_thread
+                        if map_[(i - n)*self.mapinfo.width + j + n] < self.obstacle_thread:
+                            map_[(i - n)*self.mapinfo.width + j + n] = self.obstacle_thread
+                        if map_[(i - n)*self.mapinfo.width + j - n] < self.obstacle_thread:
+                            map_[(i - n)*self.mapinfo.width + j - n] = self.obstacle_thread
+
+                    elif not xn and not yp and xp and yn:
+                        if map_[i*self.mapinfo.width + j + n] < self.obstacle_thread:
+                            map_[i*self.mapinfo.width + j + n] = self.obstacle_thread
+                        if map_[(i - n)*self.mapinfo.width + j] < self.obstacle_thread:
+                            map_[(i - n)*self.mapinfo.width + j] = self.obstacle_thread
+                        if map_[(i - n)*self.mapinfo.width + j + n] < self.obstacle_thread:
+                            map_[(i - n)*self.mapinfo.width + j + n] = self.obstacle_thread
+
+                    elif not xn and not yn and xp and yp:
+                        if map_[i*self.mapinfo.width + j + n] < self.obstacle_thread:
+                            map_[i*self.mapinfo.width + j + n] = self.obstacle_thread
+                        if map_[(i + n)*self.mapinfo.width + j] < self.obstacle_thread:
+                            map_[(i + n)*self.mapinfo.width + j] = self.obstacle_thread
+                        if map_[(i + n)*self.mapinfo.width + j + n] < self.obstacle_thread:
+                            map_[(i + n)*self.mapinfo.width + j + n] = self.obstacle_thread
+
+                    elif not xp and not yn and xn and yp:
+                        if map_[i*self.mapinfo.width + j - n] < self.obstacle_thread:
+                            map_[i*self.mapinfo.width + j - n] = self.obstacle_thread
+                        if map_[(i + n)*self.mapinfo.width + j] < self.obstacle_thread:
+                            map_[(i + n)*self.mapinfo.width + j] = self.obstacle_thread
+                        if map_[(i + n)*self.mapinfo.width + j - n] < self.obstacle_thread:
+                            map_[(i + n)*self.mapinfo.width + j - n] = self.obstacle_thread
+
+                    elif not yp and not xp and xn and yn:
+                        if map_[i*self.mapinfo.width + j - n] < self.obstacle_thread:
+                            map_[i*self.mapinfo.width + j - n] = self.obstacle_thread
+                        if map_[(i - n)*self.mapinfo.width + j] < self.obstacle_thread:
+                            map_[(i - n)*self.mapinfo.width + j] = self.obstacle_thread
+                        if map_[(i - n)*self.mapinfo.width + j - n] < self.obstacle_thread:
+                            map_[(i - n)*self.mapinfo.width + j - n] = self.obstacle_thread
+
+                    else:
+                        print '##################  unkown error ########################'
+            else:
+                pass
+        return map_
 
     def ReBuildMapCB(self, proj_msg):
         with self.locker:
@@ -189,72 +270,85 @@ class CostPlanMap():
             #     pub.publish(self.pub_map)
                 #rospy.loginfo('holding map')
 
-    def Clear(self, event):
+    # def Clear(self, event):
+    #     with self.locker:
+    #         global init
+    #         if init:
+    #             rospy.loginfo('cleaning map')
+    #             self.pub_map = self.Fade(self.pub_map)
+    #             self.Pubdata.append(self.JPS_map_init)
+    #             pass
+    #         else:
+    #             rospy.logwarn('waiting for init map')
+    #
+    # def Fade(self, map_msg):
+    #     # print 'fading'
+    #     CheckElements = []
+    #     global ModifyElement
+    #     for num in ModifyElement:
+    #         for n in range(self.devergency_scale / 2):
+    #             # map_msg.data[num] -= 10
+    #             if map_msg.data[num + n] > 0 and self.JPS_map_init[num + n] < self.obstacle_thread:
+    #                 if (num + n) not in CheckElements:
+    #                     CheckElements.append(num + n)
+    #                 map_msg.data[num + n] -= 10
+    #                 if map_msg.data[num + n] <= 0:
+    #                     map_msg.data[num + n] = 0
+    #
+    #             if map_msg.data[num - n] > 0 and self.JPS_map_init[num - n] < self.obstacle_thread:
+    #                 if (num - n) not in CheckElements:
+    #                     CheckElements.append(num - n)
+    #                 map_msg.data[num - n] -= 10
+    #                 if map_msg.data[num - n] <= 0:
+    #                     map_msg.data[num - n] = 0
+    #
+    #             if map_msg.data[num + n + n * self.mapinfo.width] > 0 and self.JPS_map_init[num + n + n * self.mapinfo.width] < self.obstacle_thread:
+    #                 if (num + n + n * self.mapinfo.width) not in CheckElements:
+    #                     CheckElements.append(num + n + n * self.mapinfo.width)
+    #                 map_msg.data[num + n + n * self.mapinfo.width] -= 10
+    #                 if map_msg.data[num + n + n * self.mapinfo.width] <= 0:
+    #                     map_msg.data[num + n + n * self.mapinfo.width] = 0
+    #
+    #             if map_msg.data[num + n - n * self.mapinfo.width] > 0 and self.JPS_map_init[num + n - n * self.mapinfo.width] < self.obstacle_thread:
+    #                 if (num + n - n * self.mapinfo.width) not in CheckElements:
+    #                     CheckElements.append(num + n - n * self.mapinfo.width)
+    #                 map_msg.data[num + n - n * self.mapinfo.width] -= 10
+    #                 if map_msg.data[num + n - n * self.mapinfo.width] <= 0:
+    #                     map_msg.data[num + n - n * self.mapinfo.width] = 0
+    #
+    #             if map_msg.data[num - n + n * self.mapinfo.width] > 0 and self.JPS_map_init[num - n + n * self.mapinfo.width] < self.obstacle_thread:
+    #                 if (num - n + n * self.mapinfo.width) not in CheckElements:
+    #                     CheckElements.append(num - n + n * self.mapinfo.width)
+    #                 map_msg.data[num - n + n * self.mapinfo.width] -= 10
+    #                 if map_msg.data[num - n + n * self.mapinfo.width] <= 0:
+    #                     map_msg.data[num - n + n * self.mapinfo.width] = 0
+    #
+    #             if map_msg.data[num - n - n * self.mapinfo.width] > 0 and self.JPS_map_init[num - n - n * self.mapinfo.width] < self.obstacle_thread:
+    #                 if (num - n - n * self.mapinfo.width) not in CheckElements:
+    #                     CheckElements.append(num - n - n * self.mapinfo.width)
+    #                 map_msg.data[num - n - n * self.mapinfo.width] -= 10
+    #                 if map_msg.data[num - n - n * self.mapinfo.width] <= 0:
+    #                     map_msg.data[num - n - n * self.mapinfo.width] = 0
+    #
+    #         # result = [True if map_msg.data[num]==0 else False for num in CheckElements]
+    #         # if False not in result:
+    #         ModifyElement.remove(num)
+    #         # if map_msg.data[num] == 0:
+    #         #     ModifyElement.remove(num)
+    #             #map_msg.data[num] = 0
+    #     return map_msg
+
+    def AMCLMapSever(self):
         with self.locker:
-            global init
-            if init:
-                # rospy.loginfo('cleaning map')
-                self.pub_map = self.Fade(self.pub_map)
-                # self.Pubdata.append(self.JPS_map_init)
-            else:
-                rospy.logwarn('waiting for init map')
+            rospy.Service('/JPS_map_init', GetMap, self.JPSmapServiceCB)
 
-    def Fade(self, map_msg):
-        # print 'fading'
-        CheckElements = []
-        global ModifyElement
-        for num in ModifyElement:
-            for n in range(self.devergency_scale / 2):
-                # map_msg.data[num] -= 10
-                if map_msg.data[num + n] > 0 and self.JPS_map_init[num + n] < self.obstacle_thread:
-                    if (num + n) not in CheckElements:
-                        CheckElements.append(num + n)
-                    map_msg.data[num + n] -= 10
-                    if map_msg.data[num + n] <= 0:
-                        map_msg.data[num + n] = 0
-
-                if map_msg.data[num - n] > 0 and self.JPS_map_init[num - n] < self.obstacle_thread:
-                    if (num - n) not in CheckElements:
-                        CheckElements.append(num - n)
-                    map_msg.data[num - n] -= 10
-                    if map_msg.data[num - n] <= 0:
-                        map_msg.data[num - n] = 0
-
-                if map_msg.data[num + n + n * self.mapinfo.width] > 0 and self.JPS_map_init[num + n + n * self.mapinfo.width] < self.obstacle_thread:
-                    if (num + n + n * self.mapinfo.width) not in CheckElements:
-                        CheckElements.append(num + n + n * self.mapinfo.width)
-                    map_msg.data[num + n + n * self.mapinfo.width] -= 10
-                    if map_msg.data[num + n + n * self.mapinfo.width] <= 0:
-                        map_msg.data[num + n + n * self.mapinfo.width] = 0
-
-                if map_msg.data[num + n - n * self.mapinfo.width] > 0 and self.JPS_map_init[num + n - n * self.mapinfo.width] < self.obstacle_thread:
-                    if (num + n - n * self.mapinfo.width) not in CheckElements:
-                        CheckElements.append(num + n - n * self.mapinfo.width)
-                    map_msg.data[num + n - n * self.mapinfo.width] -= 10
-                    if map_msg.data[num + n - n * self.mapinfo.width] <= 0:
-                        map_msg.data[num + n - n * self.mapinfo.width] = 0
-
-                if map_msg.data[num - n + n * self.mapinfo.width] > 0 and self.JPS_map_init[num - n + n * self.mapinfo.width] < self.obstacle_thread:
-                    if (num - n + n * self.mapinfo.width) not in CheckElements:
-                        CheckElements.append(num - n + n * self.mapinfo.width)
-                    map_msg.data[num - n + n * self.mapinfo.width] -= 10
-                    if map_msg.data[num - n + n * self.mapinfo.width] <= 0:
-                        map_msg.data[num - n + n * self.mapinfo.width] = 0
-
-                if map_msg.data[num - n - n * self.mapinfo.width] > 0 and self.JPS_map_init[num - n - n * self.mapinfo.width] < self.obstacle_thread:
-                    if (num - n - n * self.mapinfo.width) not in CheckElements:
-                        CheckElements.append(num - n - n * self.mapinfo.width)
-                    map_msg.data[num - n - n * self.mapinfo.width] -= 10
-                    if map_msg.data[num - n - n * self.mapinfo.width] <= 0:
-                        map_msg.data[num - n - n * self.mapinfo.width] = 0
-
-            result = [True if map_msg.data[num]==0 else False for num in CheckElements]
-            if False not in result:
-                ModifyElement.remove(num)
-            # if map_msg.data[num] == 0:
-            #     ModifyElement.remove(num)
-                #map_msg.data[num] = 0
-        return map_msg
+    def JPSmapServiceCB(self, request):
+        rospy.loginfo('sending JPS init map...')
+        response = OccupancyGrid()
+        response.data = self.JPS_map_init
+        response.info = self.mapinfo
+        response.header = self.init_map.header
+        return response
 
 if __name__=='__main__':
      rospy.init_node('costplan_map')
