@@ -20,6 +20,31 @@ from nav_msgs.srv import *
 
 # init = True
 
+
+class PriorityQueue():
+
+    def __init__(self):
+        self.pq = []  # list of entries arranged in a heap
+        self.counter = itertools.count()  # unique sequence count
+
+    def add_task(self, task, priority=0):
+        count = next(self.counter)
+        entry = [priority, count, task]
+        heapq.heappush(self.pq, entry)
+
+    def pop_task(self):
+        while self.pq:
+            priority, count, task = heapq.heappop(self.pq)
+            return task
+        raise KeyError('pop from an empty priority queue')
+
+    def empty(self):
+        return len(self.pq) == 0
+
+class FoundPath(Exception):
+    pass
+
+
 class JPS():
     ##########################################################################################################
     # JUMP-POINT SEARCH                                                                                      #
@@ -77,10 +102,10 @@ class JPS():
             self.end_with = None
             self.start_from = (int((start.x - self.mapinfo.origin.position.x)/ self.mapinfo.resolution) + int((start.y - self.mapinfo.origin.position.y) / self.mapinfo.resolution) * self.mapinfo.width)
             self.end_with = (int((end.x - self.mapinfo.origin.position.x) / self.mapinfo.resolution) + int((end.y - self.mapinfo.origin.position.y) / self.mapinfo.resolution) * self.mapinfo.width)
-            if self.JPS_map(self.end_with) >= self.obstacle_thread:
+            if self.JPS_map[self.end_with] >= self.obstacle_thread:
                 rospy.logwarn('goal is not walkable, unable to generate a plan')
                 return None
-            if self.JPS_map(self.start_from) >= self.obstacle_thread:
+            if self.JPS_map[self.start_from] >= self.obstacle_thread:
                 rospy.logwarn('cannot generate a plan due to staying in a obstacle')
                 return None
             path = None
@@ -101,6 +126,7 @@ class JPS():
             self.field[self.start_from] = self.ORIGIN
             self.field[self.end_with] = self.DESTINATION
             self.sources = dict()
+            # self.ADD_JUMPPOINT((self.start_from%self.mapinfo.width, self.start_from/self.mapinfo.width))
             self.ADD_JUMPPOINT(self.start_from)
             while not self.Queue.empty():
                 node = self.Queue.pop_task()
@@ -121,13 +147,16 @@ class JPS():
 
     def ADD_JUMPPOINT(self, node):
         if node != None:
-            self.Queue.add_task(node, self.field[node[1]*self.mapinfo.width + node[0]] + numpy.sqrt((node[1] - self.end_with[1])**2 + (node[0] - self.end_with[0])**2))
-            #self.Queue.add_task(node, self.field[node[1]][node[0]] + max((node[1] - self.end_with[1]), (node[0] - self.end_with[0])))
+            self.Queue.add_task(node, (self.field[node] + numpy.sqrt((((node - self.end_with)/self.mapinfo.width)**2 + ((node - self.end_with)%self.mapinfo.width)**2))))
 
     def explore_diagonal(self, node, direction_x, direction_y):
-        cur_x = node[0]
-        cur_y = node[1]
-        cur_cost = self.field[node[1]*self.mapinfo.width + node[0]]
+        ######################################################
+        ########### diagonal explore 全 node 一维化 ###########
+        ######################################################
+        cur_x = node%self.mapinfo.width
+        cur_y = node/self.mapinfo.width
+        # cur_node = copy.deepcopy(node)
+        cur_cost = self.field[node]
         while True:
             cur_x += direction_x
             cur_y += direction_y
@@ -135,7 +164,7 @@ class JPS():
             if self.field[cur_y*self.mapinfo.width + cur_x] == self.UNINITIALIZED:
                 self.field[cur_y*self.mapinfo.width + cur_x] = cur_cost
                 self.sources[cur_y*self.mapinfo.width + cur_x] = node
-            elif cur_x == self.end_with[0] and cur_y == self.end_with[1]:
+            elif cur_x == self.end_with%self.mapinfo.width and cur_y == self.end_with/self.mapinfo.width:
                 self.field[cur_y*self.mapinfo.width + cur_x] = cur_cost
                 self.sources[cur_y*self.mapinfo.width + cur_x] = node
                 raise FoundPath()
@@ -151,34 +180,10 @@ class JPS():
             else:
                 self.ADD_JUMPPOINT(self.explore_straight((cur_x, cur_y), 0, direction_y))
 
-    # def explore_diagonal(self, node, direction_x, direction_y):
-    #     cur_x = node[0]
-    #     cur_y = node[1]
-    #     cur_cost = self.field[node[1]][node[0]]
-    #     while True:
-    #         cur_x += direction_x
-    #         cur_y += direction_y
-    #         cur_cost += 1.414
-    #         if self.field[cur_y][cur_x] == self.UNINITIALIZED:
-    #             self.field[cur_y][cur_x] = cur_cost
-    #             self.sources[cur_y][cur_x] = node
-    #         elif cur_x == self.end_with[0] and cur_y == self.end_with[1]:
-    #             self.field[cur_y][cur_x] = cur_cost
-    #             self.sources[cur_y][cur_x] = node
-    #             raise FoundPath()
-    #         else:
-    #             return None
-    #         if self.field[cur_y][cur_x + direction_x] >= self.obstacle_thread and self.field[cur_y + direction_y][cur_x + direction_x] < self.obstacle_thread:
-    #             return (cur_x, cur_y)
-    #         else:
-    #             self.ADD_JUMPPOINT(self.explore_straight((cur_x, cur_y), direction_x, 0))
-    #
-    #         if self.field[cur_y + direction_y][cur_x] >= self.obstacle_thread and self.field[cur_y + direction_y][cur_x + direction_x] < self.obstacle_thread:
-    #             return (cur_x, cur_y)
-    #         else:
-    #             self.ADD_JUMPPOINT(self.explore_straight((cur_x, cur_y), 0, direction_y))
-
     def explore_straight(self, node, direction_x, direction_y):
+        ######################################################
+        ########### straight explore 全 node 一维化 ###########
+        ######################################################
         cur_x = node[0]
         cur_y = node[1]
         cur_cost = self.field[node[1]*self.mapinfo.width + node[0]]
@@ -189,7 +194,7 @@ class JPS():
             if self.field[cur_y*self.mapinfo.width + cur_x] == self.UNINITIALIZED:
                 self.field[cur_y*self.mapinfo.width + cur_x] = cur_cost
                 self.sources[cur_y*self.mapinfo.width + cur_x] = node
-            elif cur_x == self.end_with[0] and cur_y == self.end_with[1]:
+            elif cur_x == self.end_with%self.mapinfo.width and cur_y == self.end_with/self.mapinfo.width:
                 self.field[cur_y*self.mapinfo.width + cur_x] = cur_cost
                 self.sources[cur_y*self.mapinfo.width + cur_x] = node
                 raise FoundPath()
@@ -208,9 +213,9 @@ class JPS():
 
     def generate_path_jump_point(self):
         path = []
-        cur_x = self.end_with[0]
-        cur_y = self.end_with[1]
-        while cur_x != self.start_from[0] and cur_y != self.start_from[1]:
+        cur_x = self.end_with%self.mapinfo.width
+        cur_y = self.end_with/self.mapinfo.width
+        while cur_x != self.start_from%self.mapinfo.width and cur_y != self.start_from/self.mapinfo.width:
             if cur_x != None and cur_y != None:
                 pose = PoseStamped()
 
@@ -221,8 +226,8 @@ class JPS():
         if len(path) > 1:
             path.reverse()
             startpose = [PoseStamped()]
-            startpose[0].pose.position.x = self.start_from[0] * self.mapinfo.resolution + self.mapinfo.origin.position.x
-            startpose[0].pose.position.y = self.start_from[1] * self.mapinfo.resolution + self.mapinfo.origin.position.y
+            startpose[0].pose.position.x = self.start_from%self.mapinfo.width * self.mapinfo.resolution + self.mapinfo.origin.position.x
+            startpose[0].pose.position.y = self.start_from/self.mapinfo.width * self.mapinfo.resolution + self.mapinfo.origin.position.y
             path = startpose + path
             # print path
             return self.get_full_path(path)
@@ -261,31 +266,6 @@ class JPS():
             return -0.05
         else:
             return 0
-
-class PriorityQueue():
-
-    def __init__(self):
-        self.pq = []  # list of entries arranged in a heap
-        self.counter = itertools.count()  # unique sequence count
-
-    def add_task(self, task, priority=0):
-        'Add a new task'
-        count = next(self.counter)
-        entry = [priority, count, task]
-        heapq.heappush(self.pq, entry)
-
-    def pop_task(self):
-        'Remove and return the lowest priority task. Raise KeyError if empty.'
-        while self.pq:
-            priority, count, task = heapq.heappop(self.pq)
-            return task
-        raise KeyError('pop from an empty priority queue')
-
-    def empty(self):
-        return len(self.pq) == 0
-
-class FoundPath(Exception):
-    pass
 
 class A_Star():
     def __init__(self, end, start, mapdata):
