@@ -110,6 +110,7 @@ class JPS():
                 return None
             path = None
             path = self.JPS_()
+            # print path
             if path != None:
                 # return (path, self.get_full_path(copy.deepcopy(path)))
                 return path
@@ -121,11 +122,13 @@ class JPS():
             return None
 
     def JPS_(self):
+        # print 'start JPS algrithm'
         if self.JPS_map != None:
             self.field = [i for i in self.JPS_map]
             self.field[self.start_from] = self.ORIGIN
             self.field[self.end_with] = self.DESTINATION
             self.sources = dict()
+            # self.sources = [None for i in self.JPS_map]
             # self.ADD_JUMPPOINT((self.start_from%self.mapinfo.width, self.start_from/self.mapinfo.width))
             self.ADD_JUMPPOINT(self.start_from)
             while not self.Queue.empty():
@@ -142,6 +145,7 @@ class JPS():
                     self.ADD_JUMPPOINT(self.explore_diagonal(node, -1, -1))
                 except FoundPath:
                     return self.generate_path_jump_point()
+            # print 'end JPS algrithm'
         else:
             rospy.logwarn('waiting for map')
 
@@ -150,87 +154,150 @@ class JPS():
             self.Queue.add_task(node, (self.field[node] + numpy.sqrt((((node - self.end_with)/self.mapinfo.width)**2 + ((node - self.end_with)%self.mapinfo.width)**2))))
 
     def explore_diagonal(self, node, direction_x, direction_y):
-        ######################################################
-        ########### diagonal explore 全 node 一维化 ###########
-        ######################################################
-        cur_x = node%self.mapinfo.width
-        cur_y = node/self.mapinfo.width
-        # cur_node = copy.deepcopy(node)
-        cur_cost = self.field[node]
+        # cur_x = node%self.mapinfo.width
+        # cur_y = node/self.mapinfo.width
+        # cur_cost = self.field[node]
+        # while True:
+        #     cur_x += direction_x
+        #     cur_y += direction_y
+        #     cur_cost += 1.414
+        #     if self.field[cur_y*self.mapinfo.width + cur_x] == self.UNINITIALIZED:
+        #         self.field[cur_y*self.mapinfo.width + cur_x] = cur_cost
+        #         self.sources[cur_y*self.mapinfo.width + cur_x] = node
+        #     elif cur_x == self.end_with%self.mapinfo.width and cur_y == self.end_with/self.mapinfo.width:
+        #         self.field[cur_y*self.mapinfo.width + cur_x] = cur_cost
+        #         self.sources[cur_y*self.mapinfo.width + cur_x] = node
+        #         raise FoundPath()
+        #     else:
+        #         return None
+        #     if self.field[cur_y*self.mapinfo.width + cur_x + direction_x] >= self.obstacle_thread and self.field[(cur_y + direction_y)*self.mapinfo.width + cur_x + direction_x] < self.obstacle_thread:
+        #         return (cur_x, cur_y)
+        #     else:
+        #         self.ADD_JUMPPOINT(self.explore_straight((cur_x, cur_y), direction_x, 0))
+        #
+        #     if self.field[(cur_y + direction_y)*self.mapinfo.width + cur_x] >= self.obstacle_thread and self.field[(cur_y + direction_y)*self.mapinfo.width + cur_x + direction_x] < self.obstacle_thread:
+        #         return (cur_x, cur_y)
+        #     else:
+        #         self.ADD_JUMPPOINT(self.explore_straight((cur_x, cur_y), 0, direction_y))
+        cur_node = copy.deepcopy(node)
+        cur_cost = copy.deepcopy(self.field[node])
         while True:
-            cur_x += direction_x
-            cur_y += direction_y
+            cur_node = cur_node + direction_y*self.mapinfo.width + direction_x
             cur_cost += 1.414
-            if self.field[cur_y*self.mapinfo.width + cur_x] == self.UNINITIALIZED:
-                self.field[cur_y*self.mapinfo.width + cur_x] = cur_cost
-                self.sources[cur_y*self.mapinfo.width + cur_x] = node
-            elif cur_x == self.end_with%self.mapinfo.width and cur_y == self.end_with/self.mapinfo.width:
-                self.field[cur_y*self.mapinfo.width + cur_x] = cur_cost
-                self.sources[cur_y*self.mapinfo.width + cur_x] = node
+            if self.field[cur_node] == self.UNINITIALIZED:
+                self.field[cur_node] = cur_cost
+                self.sources[cur_node] = node
+            elif cur_node == self.end_with:
+                self.field[cur_node] = cur_cost
+                self.sources[cur_node] = node
                 raise FoundPath()
             else:
                 return None
-            if self.field[cur_y*self.mapinfo.width + cur_x + direction_x] >= self.obstacle_thread and self.field[(cur_y + direction_y)*self.mapinfo.width + cur_x + direction_x] < self.obstacle_thread:
-                return (cur_x, cur_y)
-            else:
-                self.ADD_JUMPPOINT(self.explore_straight((cur_x, cur_y), direction_x, 0))
 
-            if self.field[(cur_y + direction_y)*self.mapinfo.width + cur_x] >= self.obstacle_thread and self.field[(cur_y + direction_y)*self.mapinfo.width + cur_x + direction_x] < self.obstacle_thread:
-                return (cur_x, cur_y)
+            if self.field[cur_node + direction_x] >= self.obstacle_thread and self.field[cur_node + direction_x + direction_y*self.mapinfo.width] < self.obstacle_thread:
+                return cur_node
             else:
-                self.ADD_JUMPPOINT(self.explore_straight((cur_x, cur_y), 0, direction_y))
+                self.ADD_JUMPPOINT(self.explore_straight(cur_node, direction_x, 0))
+            if self.field[cur_node + direction_y*self.mapinfo.width] >= self.obstacle_thread and self.field[cur_node + direction_x + direction_y*self.mapinfo.width] < self.obstacle_thread:
+                return cur_node
+            else:
+                self.ADD_JUMPPOINT(self.explore_straight(cur_node, 0, direction_y))
+
 
     def explore_straight(self, node, direction_x, direction_y):
-        ######################################################
-        ########### straight explore 全 node 一维化 ###########
-        ######################################################
-        cur_x = node[0]
-        cur_y = node[1]
-        cur_cost = self.field[node[1]*self.mapinfo.width + node[0]]
+        # cur_x = node[0]
+        # cur_y = node[1]
+        # cur_cost = self.field[node[1]*self.mapinfo.width + node[0]]
+        # while True:
+        #     cur_x += direction_x
+        #     cur_y += direction_y
+        #     cur_cost += 1
+        #     if self.field[cur_y*self.mapinfo.width + cur_x] == self.UNINITIALIZED:
+        #         self.field[cur_y*self.mapinfo.width + cur_x] = cur_cost
+        #         self.sources[cur_y*self.mapinfo.width + cur_x] = node
+        #     elif cur_x == self.end_with%self.mapinfo.width and cur_y == self.end_with/self.mapinfo.width:
+        #         self.field[cur_y*self.mapinfo.width + cur_x] = cur_cost
+        #         self.sources[cur_y*self.mapinfo.width + cur_x] = node
+        #         raise FoundPath()
+        #     else:
+        #         return None
+        #     if direction_x == 0:
+        #         if self.field[cur_y*self.mapinfo.width + cur_x + 1] >= self.obstacle_thread and self.field[(cur_y + direction_y)*self.mapinfo.width + cur_x + 1] < self.obstacle_thread:
+        #             return (cur_x, cur_y)
+        #         if self.field[cur_y*self.mapinfo.width + cur_x - 1] >= self.obstacle_thread and self.field[(cur_y + direction_y)*self.mapinfo.width + cur_x - 1] < self.obstacle_thread:
+        #             return (cur_x, cur_y)
+        #     if direction_y == 0 :
+        #         if self.field[(cur_y + 1)*self.mapinfo.width + cur_x] >= self.obstacle_thread and self.field[(cur_y + 1)*self.mapinfo.width + cur_x + direction_x] < self.obstacle_thread:
+        #             return (cur_x, cur_y)
+        #         if self.field[(cur_y - 1)*self.mapinfo.width + cur_x] >= self.obstacle_thread and self.field[(cur_y - 1)*self.mapinfo.width + cur_x + direction_x] < self.obstacle_thread:
+        #             return (cur_x, cur_y)
+        cur_node = copy.deepcopy(node)
+        cur_cost = copy.deepcopy(self.field[node])
         while True:
-            cur_x += direction_x
-            cur_y += direction_y
+            cur_node = cur_node + direction_y*self.mapinfo.width + direction_x
             cur_cost += 1
-            if self.field[cur_y*self.mapinfo.width + cur_x] == self.UNINITIALIZED:
-                self.field[cur_y*self.mapinfo.width + cur_x] = cur_cost
-                self.sources[cur_y*self.mapinfo.width + cur_x] = node
-            elif cur_x == self.end_with%self.mapinfo.width and cur_y == self.end_with/self.mapinfo.width:
-                self.field[cur_y*self.mapinfo.width + cur_x] = cur_cost
-                self.sources[cur_y*self.mapinfo.width + cur_x] = node
+            if self.field[cur_node] == self.UNINITIALIZED:
+                self.field[cur_node] = cur_cost
+                self.sources[cur_node] = node
+            elif cur_node == self.end_with:
+                self.field[cur_node] = cur_cost
+                self.sources[cur_node] = node
                 raise FoundPath()
             else:
                 return None
+
             if direction_x == 0:
-                if self.field[cur_y*self.mapinfo.width + cur_x + 1] >= self.obstacle_thread and self.field[(cur_y + direction_y)*self.mapinfo.width + cur_x + 1] < self.obstacle_thread:
-                    return (cur_x, cur_y)
-                if self.field[cur_y*self.mapinfo.width + cur_x - 1] >= self.obstacle_thread and self.field[(cur_y + direction_y)*self.mapinfo.width + cur_x - 1] < self.obstacle_thread:
-                    return (cur_x, cur_y)
-            if direction_y == 0 :
-                if self.field[(cur_y + 1)*self.mapinfo.width + cur_x] >= self.obstacle_thread and self.field[(cur_y + 1)*self.mapinfo.width + cur_x + direction_x] < self.obstacle_thread:
-                    return (cur_x, cur_y)
-                if self.field[(cur_y - 1)*self.mapinfo.width + cur_x] >= self.obstacle_thread and self.field[(cur_y - 1)*self.mapinfo.width + cur_x + direction_x] < self.obstacle_thread:
-                    return (cur_x, cur_y)
+                if self.field[cur_node + 1] >= self.obstacle_thread and self.field[cur_node + direction_y*self.mapinfo.width + 1] < self.obstacle_thread:
+                    return cur_node
+                if self.field[cur_node - 1] >= self.obstacle_thread and self.field[cur_node + direction_y*self.mapinfo.width - 1] < self.obstacle_thread:
+                    return cur_node
+            if direction_y == 0:
+                if self.field[cur_node + self.mapinfo.width] >= self.obstacle_thread and self.field[cur_node + self.mapinfo.width + direction_x] < self.obstacle_thread:
+                    return cur_node
+                if self.field[cur_node - self.mapinfo.width] >= self.obstacle_thread and self.field[cur_node - self.mapinfo.width + direction_x] < self.obstacle_thread:
+                    return cur_node
+
 
     def generate_path_jump_point(self):
+        # path = []
+        # cur_x = self.end_with%self.mapinfo.width
+        # cur_y = self.end_with/self.mapinfo.width
+        # while cur_x != self.start_from%self.mapinfo.width and cur_y != self.start_from/self.mapinfo.width:
+        #     if cur_x != None and cur_y != None:
+        #         pose = PoseStamped()
+        #
+        #         pose.pose.position.x = (cur_x) * self.mapinfo.resolution + self.mapinfo.origin.position.x
+        #         pose.pose.position.y = (cur_y) * self.mapinfo.resolution + self.mapinfo.origin.position.y
+        #         path.append(pose)
+        #         (cur_x, cur_y) = self.sources[cur_y][cur_x]
+        # if len(path) > 1:
+        #     path.reverse()
+        #     startpose = [PoseStamped()]
+        #     startpose[0].pose.position.x = self.start_from%self.mapinfo.width * self.mapinfo.resolution + self.mapinfo.origin.position.x
+        #     startpose[0].pose.position.y = self.start_from/self.mapinfo.width * self.mapinfo.resolution + self.mapinfo.origin.position.y
+        #     path = startpose + path
+        #     # print path
+        #     return self.get_full_path(path)
+        # else:
+        #     return []
         path = []
-        cur_x = self.end_with%self.mapinfo.width
-        cur_y = self.end_with/self.mapinfo.width
-        while cur_x != self.start_from%self.mapinfo.width and cur_y != self.start_from/self.mapinfo.width:
-            if cur_x != None and cur_y != None:
-                pose = PoseStamped()
-
-                pose.pose.position.x = (cur_x) * self.mapinfo.resolution + self.mapinfo.origin.position.x
-                pose.pose.position.y = (cur_y) * self.mapinfo.resolution + self.mapinfo.origin.position.y
-                path.append(pose)
-                (cur_x, cur_y) = self.sources[cur_y][cur_x]
+        cur_node = self.end_with
+        # print 'sources: ', self.sources
+        while cur_node != self.start_from:
+            pose = PoseStamped()
+            pose.pose.position.x = cur_node%self.mapinfo.width*self.mapinfo.resolution + self.mapinfo.origin.position.x
+            pose.pose.position.y = cur_node/self.mapinfo.width*self.mapinfo.resolution + self.mapinfo.origin.position.y
+            path.append(pose)
+            cur_node = self.sources[cur_node]
         if len(path) > 1:
             path.reverse()
             startpose = [PoseStamped()]
             startpose[0].pose.position.x = self.start_from%self.mapinfo.width * self.mapinfo.resolution + self.mapinfo.origin.position.x
             startpose[0].pose.position.y = self.start_from/self.mapinfo.width * self.mapinfo.resolution + self.mapinfo.origin.position.y
             path = startpose + path
-            # print path
-            return self.get_full_path(path)
+            # return self.get_full_path(path)
+            # print 'len: ', len(path)
+            return path
         else:
             return []
 
