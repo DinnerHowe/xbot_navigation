@@ -121,50 +121,14 @@ class BaseController:
         global Tasks
         cur_position = odom.position
         cur_goal = Tasks[0]
-        if abs(round(cur_position.x - cur_goal.x, 2)) >= 0.05 and abs(round(cur_position.y - cur_goal.y, 2)) >= 0.05:
-            #################################################
-            ####   修改移动方式
-            #################################################
-        else:
+        if abs(round(cur_position.x - cur_goal.x, 2)) <= 0.05 and abs(round(cur_position.y - cur_goal.y, 2)) <= 0.05:
             Tasks.remove(cur_goal)
+        else:
+            ########################################
+            ## i need do something here, tomorroy ##
+            ########################################
+            pass
 
-
-        # self.num = 10
-        # cmd = Twist()
-        # if self.path != []:
-        #     if len(self.path) > self.num:
-        #         if round(self.path[self.num].pose.position.x - odom.pose.position.x, 2) >= 0.05 or round(self.path[self.num].pose.position.y - odom.pose.position.y, 2) >= 0.05:
-        #             cmd = self.DiffControl(odom.pose, self.path[self.num].pose, self.PathBias)
-        #         else:
-        #             count = 0
-        #             if len(self.path) > self.num*2:
-        #                 for i in self.path[self.num:self.num*2]:
-        #                     count += 1
-        #                     if round(i.pose.position.x - odom.pose.position.x, 2) >= 0.05 or round(i.pose.position.y - odom.pose.position.y, 2) >= 0.05:
-        #                         rospy.loginfo('obtain next motion position 1')
-        #                         break
-        #             else:
-        #                 for i in self.path:
-        #                     for i in self.path[self.num:self.num * 2]:
-        #                         count += 1
-        #                         if round(i.pose.position.x - odom.pose.position.x, 2) >= 0.05 or round(i.pose.position.y - odom.pose.position.y, 2) >= 0.05:
-        #                             rospy.loginfo('obtain next motion position 2')
-        #                             break
-        #
-        #             cmd = self.DiffControl(odom.pose, self.path[count].pose, self.PathBias)
-        #
-        #     else:
-        #         try:
-        #             if round(self.path[-1].pose.position.x - odom.pose.position.x, 2) > 0.02 and round(self.path[-1].pose.position.y - odom.pose.position.y, 2) > 0.02:
-        #                 cmd = self.GTP(odom.pose, self.path[-1].pose)
-        #             else:
-        #                 rospy.loginfo('robot in goal position 0')
-        #                 pass
-        #         except:
-        #             pass
-        #
-        # if cmd != Twist():
-        #  self.cmd_queue.append(copy.deepcopy(cmd))
 
     def PubcmdCB(self, data):
         cmd = self.cmd_queue.pop()
@@ -189,36 +153,12 @@ class BaseController:
             self.path = PlanPath.poses
             global Tasks
             segment = [i.pose.position for i in PlanPath]
-            for i in range(len(segment)):
-                if i > 10:
-                    break
-                else:
+            path_length = len(segment)
+            if path_length > 10:
+                for i in range(path_length+1)[1:]:
+                    if i % 10 == 0:
+                        Tasks.append(segment(i-1))
 
-
-    def FrontClean(self, odom, path):
-     Predict_Distance = self.num * self.Predict
-     Forward_Distance = self.num
-     if len(path) >= (self.num + Predict_Distance):
-      return self.FrontMAX(Predict_Distance, Forward_Distance, odom, path)
-     else:
-      return False
-
-    def FrontMAX(self, Predict_Distance, Forward_Distance, odom, path):
-
-     FrontLine = CVlib.SLF()
-
-     Front1 = copy.deepcopy(path[: Predict_Distance])
-     (Line1, CoefficientA1, CoefficientB1, CoefficientC1) = FrontLine.OLS(Front1)
-
-     Coe1 = [CoefficientA1, CoefficientB1]
-
-     Orientation = odom.orientation
-     SimilarLines = FrontLine.Orientation_line_com(Orientation, Coe1)
-
-     if SimilarLines:
-      return True
-     else:
-      return False
 
     def AngularDrift(self, goal, odom):
 
