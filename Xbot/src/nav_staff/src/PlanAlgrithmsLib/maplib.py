@@ -77,12 +77,17 @@ def visual_test(data, Type, color, scale):  # data=[point1,point2,point3...]####
         flag_marker.scale = scale
         flag_marker.type = Type
         flag_marker.header.frame_id = 'map'
-        flag_marker.text = text
+        flag_marker.text = "test"
         # flag_marker.ns = ""
         flag_marker.header.stamp = rospy.Time.now()
         flag_marker.lifetime = rospy.Duration(1)
         flag_marker.pose = data
-        flag_marker.pose.position.z = self.flag_height
+        flag_marker.pose.position.z = 1
         return flag_marker
 
- 
+#地图数据中的data格数[num]
+def position_num(map, position):
+    pose_x = int(round((position.x - map.info.origin.position.x)/map.info.resolution))
+    pose_y = int(round((position.y - map.info.origin.position.y)/map.info.resolution))
+    num = pose_y * map.info.width + pose_x
+    return num

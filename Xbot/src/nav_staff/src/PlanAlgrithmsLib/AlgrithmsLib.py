@@ -64,10 +64,10 @@ class JPS():
 
     def define(self):
         rospy.loginfo('intial JPS algrithm')
-        if not rospy.has_param('~obstacle_thread'):
-            rospy.set_param('~obstacle_thread', 20)
-        self.obstacle_thread = rospy.get_param('~obstacle_thread')
-
+        # if not rospy.has_param('~obstacle_thread'):
+        #     rospy.set_param('~obstacle_thread', 20)
+        # self.obstacle_thread = rospy.get_param('~obstacle_thread')
+        self.obstacle_thread = 20
         self.UNINITIALIZED = 0
         self.OBSTACLE = 100
         self.ORIGIN = 0
@@ -93,6 +93,7 @@ class JPS():
     def get_map(self, map_message):
         self.mapinfo = map_message.info
         self.JPS_map = map_message.data
+        rospy.loginfo('received updata map...')
 
     def get_path(self, end, start):
         rospy.loginfo('starting gernerating plan')
@@ -102,11 +103,12 @@ class JPS():
             self.end_with = None
             self.start_from = (int((start.x - self.mapinfo.origin.position.x)/ self.mapinfo.resolution) + int((start.y - self.mapinfo.origin.position.y) / self.mapinfo.resolution) * self.mapinfo.width)
             self.end_with = (int((end.x - self.mapinfo.origin.position.x) / self.mapinfo.resolution) + int((end.y - self.mapinfo.origin.position.y) / self.mapinfo.resolution) * self.mapinfo.width)
-            if self.JPS_map[self.end_with] >= self.obstacle_thread:
-                rospy.logwarn('goal is not walkable, unable to generate a plan')
+            if self.JPS_map[self.end_with] >= 30:
+                rospy.logwarn('goal is not walkable, unable to generate a plan, dangerous %: ' + str(self.JPS_map[self.end_with]))
                 return None
-            if self.JPS_map[self.start_from] >= self.obstacle_thread:
-                rospy.logwarn('cannot generate a plan due to staying in a obstacle')
+            if self.JPS_map[self.start_from] >= 30:
+                rospy.logwarn('cannot generate a plan due to staying in a obstacle dangerous %:' + str(self.JPS_map[self.start_from]))
+                # print start
                 return None
             path = None
             path = self.JPS_()

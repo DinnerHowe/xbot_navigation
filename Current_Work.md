@@ -14,6 +14,6 @@ roslaunch simulation fake_amcl.launch
 roslaunch machine 3D_RVIZ.launch
 roslaunch machine robot_controller_single.launch
 rosrun simulation interactive_marker.py
-#rosrun nav_staff costplan_map.py
-rosrun nav_staff Planner.py(改为直接订阅costplan map)
+#rosrun nav_staff costplan_map.py(move base)
+#rosrun nav_staff Planner.py(改为直接订阅costplan map)(move base)
 rosrun nav_staff test.py

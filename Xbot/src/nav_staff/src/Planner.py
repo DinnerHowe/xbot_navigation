@@ -51,10 +51,12 @@ class Planner():
         rospy.spin()
 
     def OdomCB(self, odom_messge):
-        self.odom = odom_messge
+        with self.locker:
+            self.odom = odom_messge
 
     def GoalCB(self, data):
-        self.MakePlan(data)
+        with self.locker:
+            self.MakePlan(data)
 
     def MakePlan(self, data):
         # time1 = time.time()
@@ -82,18 +84,22 @@ class Planner():
         return plan
 
     def MapCB(self, map_message):
-        global maps
-        maps.append(map_message)
+        with self.locker:
+            self.JPS.get_map(map_message)
+            global maps
+            maps.append(map_message)
+
 
     def ChrashChecker(self, event):
-        global maps
-        try:
-            map_message = maps.pop()
-            # print 'chrash checker num', map_message.header.seq
-            if self.Chrash(map_message):
-                self.JPS.get_map(map_message)
-        except:
-            pass
+        with self.locker:
+            global maps
+            try:
+                map_message = maps.pop()
+                # print 'chrash checker num', map_message.header.seq
+                if self.Chrash(map_message):
+                    self.JPS.get_map(map_message)
+            except:
+                pass
 
     def Chrash(self, map_message):
         blocked = maplib.get_effective_point(map_message)
@@ -136,29 +142,30 @@ class Planner():
         pub.publish(result)
 
     def PubPlanCB(self, event):
-        # with self.locker:
-        global plans
-        if len(plans) != 0:
-            rospy.loginfo('get new plan....')
-            self.PubPlan = plans.pop()
-            self.PubPlan.header.stamp = rospy.Time.now()
-            self.PubPlan.header.seq = self.seq
-            self.seq += 1
-            pub = rospy.Publisher(self.PlanTopic, Path, queue_size=2)
-            # self.PubPlan.poses = self.PubPlan.poses[:20]
-            pub.publish(self.PubPlan)
-            rospy.loginfo('publshing a new plan')
-        else:
-            if self.PubPlan.poses != []:
-                # rospy.loginfo('update plan')
-                pub = rospy.Publisher(self.PlanTopic, Path, queue_size=2)
+        with self.locker:
+            global plans
+            if len(plans) != 0:
+                rospy.loginfo('get new plan....')
+                self.PubPlan = plans.pop()
                 self.PubPlan.header.stamp = rospy.Time.now()
                 self.PubPlan.header.seq = self.seq
                 self.seq += 1
+                pub = rospy.Publisher(self.PlanTopic, Path, queue_size=2)
+                # self.PubPlan.poses = self.PubPlan.poses[:20]
                 pub.publish(self.PubPlan)
-                # rospy.loginfo('publshing a old plan')
+                rospy.loginfo('publshing a new plan')
+            else:
+                pass
+                # if self.PubPlan.poses != []:
+                #     # rospy.loginfo('update plan')
+                #     pub = rospy.Publisher(self.PlanTopic, Path, queue_size=2)
+                #     self.PubPlan.header.stamp = rospy.Time.now()
+                #     self.PubPlan.header.seq = self.seq
+                #     self.seq += 1
+                #     pub.publish(self.PubPlan)
+                #     # rospy.loginfo('publshing a old plan')
 
-                # print self.PubPlan
+                    # print self.PubPlan
 
     def define(self):
         if not rospy.has_param('~GoalTopic'):
@@ -194,7 +201,7 @@ class Planner():
         self.detect_scale = rospy.get_param('~detect_scale')
 
         self.period = rospy.Duration(PublishFrequency)
-        # self.locker = Lock()
+        self.locker = Lock()
         self.PubPlan = Path()
 
         self.JPS = AlgrithmsLib.JPS()

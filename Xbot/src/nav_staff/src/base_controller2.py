@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding=utf-8
 """
-底盘移动控制软件
+底盘移动控制软件(备份)
 
 Copyright (c) 2016 Xu Zhihao (Howe).  All rights reserved.
 
@@ -14,17 +14,14 @@ import rospy
 import numpy
 import copy
 import CVlib
-import collections
+import Queue
 from nav_msgs.msg import Path
 from geometry_msgs.msg import Twist
 from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Quaternion
 from geometry_msgs.msg import PointStamped
-from threading import Lock
 
 Last_Action = None
-# Tasks = collections.deque(maxlen=1)
-Tasks = list()
 
 class ClearParams:
     def __init__(self):
@@ -111,63 +108,51 @@ class BaseController:
 
         self.path = []
 
-        self.cmd_queue = collections.deque(maxlen=1)
+        self.cmd_queue = Queue.Queue()
 
         self.period = rospy.Duration(self.PublishFrequency)
 
-        self.locker = Lock()
-
     def OdomCB(self, odom):
-        global Tasks
-        cur_position = odom.position
-        cur_goal = Tasks[0]
-        if abs(round(cur_position.x - cur_goal.x, 2)) >= 0.05 and abs(round(cur_position.y - cur_goal.y, 2)) >= 0.05:
-            #################################################
-            ####   修改移动方式
-            #################################################
-        else:
-            Tasks.remove(cur_goal)
+        self.num = 10
+        cmd = Twist()
+        if self.path != []:
+            if len(self.path) > self.num:
+                if round(self.path[self.num].pose.position.x - odom.pose.position.x, 2) >= 0.05 or round(self.path[self.num].pose.position.y - odom.pose.position.y, 2) >= 0.05:
+                    cmd = self.DiffControl(odom.pose, self.path[self.num].pose, self.PathBias)
+                else:
+                    count = 0
+                    if len(self.path) > self.num*2:
+                        for i in self.path[self.num:self.num*2]:
+                            count += 1
+                            if round(i.pose.position.x - odom.pose.position.x, 2) >= 0.05 or round(i.pose.position.y - odom.pose.position.y, 2) >= 0.05:
+                                rospy.loginfo('obtain next motion position 1')
+                                break
+                    else:
+                        for i in self.path:
+                            for i in self.path[self.num:self.num * 2]:
+                                count += 1
+                                if round(i.pose.position.x - odom.pose.position.x, 2) >= 0.05 or round(
+                                                i.pose.position.y - odom.pose.position.y, 2) >= 0.05:
+                                    rospy.loginfo('obtain next motion position 2')
+                                    break
 
+                    cmd = self.DiffControl(odom.pose, self.path[count].pose, self.PathBias)
 
-        # self.num = 10
-        # cmd = Twist()
-        # if self.path != []:
-        #     if len(self.path) > self.num:
-        #         if round(self.path[self.num].pose.position.x - odom.pose.position.x, 2) >= 0.05 or round(self.path[self.num].pose.position.y - odom.pose.position.y, 2) >= 0.05:
-        #             cmd = self.DiffControl(odom.pose, self.path[self.num].pose, self.PathBias)
-        #         else:
-        #             count = 0
-        #             if len(self.path) > self.num*2:
-        #                 for i in self.path[self.num:self.num*2]:
-        #                     count += 1
-        #                     if round(i.pose.position.x - odom.pose.position.x, 2) >= 0.05 or round(i.pose.position.y - odom.pose.position.y, 2) >= 0.05:
-        #                         rospy.loginfo('obtain next motion position 1')
-        #                         break
-        #             else:
-        #                 for i in self.path:
-        #                     for i in self.path[self.num:self.num * 2]:
-        #                         count += 1
-        #                         if round(i.pose.position.x - odom.pose.position.x, 2) >= 0.05 or round(i.pose.position.y - odom.pose.position.y, 2) >= 0.05:
-        #                             rospy.loginfo('obtain next motion position 2')
-        #                             break
-        #
-        #             cmd = self.DiffControl(odom.pose, self.path[count].pose, self.PathBias)
-        #
-        #     else:
-        #         try:
-        #             if round(self.path[-1].pose.position.x - odom.pose.position.x, 2) > 0.02 and round(self.path[-1].pose.position.y - odom.pose.position.y, 2) > 0.02:
-        #                 cmd = self.GTP(odom.pose, self.path[-1].pose)
-        #             else:
-        #                 rospy.loginfo('robot in goal position 0')
-        #                 pass
-        #         except:
-        #             pass
-        #
-        # if cmd != Twist():
-        #  self.cmd_queue.append(copy.deepcopy(cmd))
+            else:
+                try:
+                    if round(self.path[-1].pose.position.x - odom.pose.position.x, 2) > 0.02 and round(self.path[-1].pose.position.y - odom.pose.position.y, 2) > 0.02:
+                        cmd = self.GTP(odom.pose, self.path[-1].pose)
+                    else:
+                        rospy.loginfo('robot in goal position 0')
+                        pass
+                except:
+                    pass
+
+        if cmd != Twist():
+         self.cmd_queue.put(copy.deepcopy(cmd))
 
     def PubcmdCB(self, data):
-        cmd = self.cmd_queue.pop()
+        cmd = self.cmd_queue.get()
         cmd_vel = rospy.Publisher(self.MotionTopice, Twist, queue_size=1)
 
         if cmd.linear.x != 0:
@@ -184,16 +169,8 @@ class BaseController:
         cmd_vel.publish(cmd)
 
     def PlanCB(self, PlanPath):
-        with self.locker:
-            self.path = []
-            self.path = PlanPath.poses
-            global Tasks
-            segment = [i.pose.position for i in PlanPath]
-            for i in range(len(segment)):
-                if i > 10:
-                    break
-                else:
-
+        self.path = []
+        self.path = PlanPath.poses
 
     def FrontClean(self, odom, path):
      Predict_Distance = self.num * self.Predict
@@ -387,7 +364,7 @@ class BaseController:
                 cmd.angular.z = cmdtwist
                 Last_Action = 'in position twist'
             else:
-                #rospy.loginfo('robot in goal orientation')
+                rospy.loginfo('robot arrive goal orientation')
                 pass
         return cmd
 
@@ -399,13 +376,13 @@ class BaseController:
 if __name__ == '__main__':
     rospy.init_node('BaseController_X')
 
-    # try:
+    try:
 
-    rospy.loginfo("initialization system")
-    BaseController()
-    ClearParams()
+        rospy.loginfo("initialization system")
+        BaseController()
+        ClearParams()
 
-    # except rospy.ROSInterruptException:
+    except rospy.ROSInterruptException:
 
-    rospy.loginfo("node terminated.")
+        rospy.loginfo("node terminated.")
 

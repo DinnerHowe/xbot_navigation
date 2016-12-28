@@ -68,6 +68,7 @@ class CostPlanMap():
         self.pub_map_topic = rospy.get_param('~use_plan_map_topic')
 
         self.OBSTACLE = 100
+        self.obstacle_scale = self.devergency_scale #int(self.devergency_scale / 2)
         self.period = rospy.Duration(publish_hz)
         self.seq = 0
         self.pub_map = OccupancyGrid()
@@ -78,6 +79,7 @@ class CostPlanMap():
         # print 'get init map'
         self.mapinfo = self.init_map.info
         self.JPS_map_init = []
+        rospy.loginfo('devergency_scale: ' + str(self.devergency_scale))
         self.generate_map(self.init_map)
 
     def generate_map(self, map_message):
@@ -211,34 +213,46 @@ class CostPlanMap():
                     JPS_map = [i for i in self.JPS_map_init]
                     for pose in proj_msg.poses:
                         num = maplib.position_num(self.init_map, pose.position)
-                        for n in range(self.devergency_scale/2):
-                            #JPS_map[num] += 10
-                            # if JPS_map[num] >= 90:
-                            #     JPS_map[num] = 100
-                            JPS_map[num+n] += 10
-                            JPS_map[num-n] += 10
-                            JPS_map[num+n+n*self.mapinfo.width] += 20
-                            JPS_map[num+n-n*self.mapinfo.width] += 20
+                        JPS_map[num] = 0
+                        for n in range(self.obstacle_scale):
+                            JPS_map[num] += 10
+                            JPS_map[num+n] += 30
+                            JPS_map[num-n] += 30
+                            JPS_map[num+n*self.mapinfo.width] += 30
+                            JPS_map[num-n*self.mapinfo.width] += 30
+                            JPS_map[num+n+n*self.mapinfo.width] += 30
+                            JPS_map[num+n-n*self.mapinfo.width] += 30
                             JPS_map[num-n+n*self.mapinfo.width] += 30
                             JPS_map[num-n-n*self.mapinfo.width] += 30
+                            if JPS_map[num] >= 100:
+                                JPS_map[num] = 100
+                            if JPS_map[num+n] >= 100:
+                                JPS_map[num+n] -= 30
+                            if JPS_map[num-n] >= 100:
+                                JPS_map[num-n] -= 30
+                            if JPS_map[num+n*self.mapinfo.width] >= 100:
+                                JPS_map[num+n*self.mapinfo.width] -= 30
+                            if JPS_map[num-n*self.mapinfo.width] >= 100:
+                                JPS_map[num-n*self.mapinfo.width] -= 30
+                            if JPS_map[num+n+n*self.mapinfo.width] >= 100:
+                                JPS_map[num+n+n*self.mapinfo.width] -= 30
+                            if JPS_map[num+n-n*self.mapinfo.width] >= 100:
+                                JPS_map[num+n-n*self.mapinfo.width] -= 30
+                            if JPS_map[num-n+n*self.mapinfo.width] >= 100:
+                                JPS_map[num-n+n*self.mapinfo.width] -= 30
+                            if JPS_map[num-n-n*self.mapinfo.width] >= 100:
+                                JPS_map[num-n-n*self.mapinfo.width] -= 30
 
-                            if JPS_map[num+n] >= 90:
-                                JPS_map[num+n] = 100
-                            if JPS_map[num-n] >= 90:
-                                JPS_map[num-n] = 100
-                            if JPS_map[num+n+n*self.mapinfo.width] >= 90:
-                                JPS_map[num+n+n*self.mapinfo.width] = 100
-                            if JPS_map[num+n-n*self.mapinfo.width] >= 90:
-                                JPS_map[num+n-n*self.mapinfo.width] = 100
-                            if JPS_map[num-n+n*self.mapinfo.width] >= 90:
-                                JPS_map[num-n+n*self.mapinfo.width] = 100
-                            if JPS_map[num-n-n*self.mapinfo.width] >= 90:
-                                JPS_map[num-n-n*self.mapinfo.width] = 100
+                            if JPS_map[num] == 100:
+                                break
                         global ModifyElement
                         if num not in ModifyElement:
                             ModifyElement.append(num)
-                    for i in range(self.devergency_scale/2):
-                        print JPS_map[num + n],JPS_map[num-n],JPS_map[num+n+n*self.mapinfo.width],JPS_map[num+n-n*self.mapinfo.width],JPS_map[num-n+n*self.mapinfo.width],JPS_map[num-n-n*self.mapinfo.width]
+                    # print '\n'
+                    # for i in range(self.obstacle_scale):
+                    #     print i
+                    #     print JPS_map[num + n],JPS_map[num-n],JPS_map[num+n+n*self.mapinfo.width],JPS_map[num+n-n*self.mapinfo.width],JPS_map[num-n+n*self.mapinfo.width],JPS_map[num-n-n*self.mapinfo.width]
+                    # print '\n'
                     self.Pubdata.append(JPS_map)
             else:
                 rospy.logwarn('waiting for init map')
@@ -263,7 +277,7 @@ class CostPlanMap():
                 # print '\nestablish map data spend: ', time6 - time5
                 pub = rospy.Publisher(self.pub_map_topic, OccupancyGrid, queue_size=1)
                 pub.publish(self.pub_map)
-                rospy.loginfo('updata map')
+                # rospy.loginfo('updata map')
             # else:
             #     pub = rospy.Publisher(self.pub_map_topic, OccupancyGrid, queue_size=1)
             #     self.pub_map.header.stamp = rospy.Time.now()

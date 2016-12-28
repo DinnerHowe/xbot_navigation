@@ -269,7 +269,6 @@ class tester2():
             self.JPS_map = copy.deepcopy(self.JPS_map_init)
         self.Pubdata.append(self.JPS_map)
 
-
 class tester3():
     def __init__(self):
         self.define()
@@ -390,13 +389,37 @@ class tester3():
         map_message = rospy.wait_for_message(self.MapTopic, OccupancyGrid)
         self.JPS.get_map(map_message)
 
+class tester4():
+    def __init__(self):
+        rospy.Subscriber('/move_base/action_plan', Path, self.planCB)
+        rospy.spin()
+
+    def planCB(self, data):
+        print 'header seq: ',data.header.seq
+        print 'length: ', len(data.poses)
+
+class tester5():
+    def __init__(self):
+        rospy.Subscriber('/clicked_point', PointStamped, self.PointCB)
+        rospy.Subscriber('/cost_plan_map', OccupancyGrid, self.MapCB)
+        rospy.spin()
+
+    def PointCB(self, data):
+        num = maplib.position_num(self.map, data.point)
+        print self.map.data[num]
+
+    def MapCB(self, map):
+        self.map = map
+
 if __name__=='__main__':
      rospy.init_node('Plan_tester')
      try:
          rospy.loginfo( "initialization system")
          #tester()
          # tester2()
-         tester3()
+         # tester3()
+         #tester4()
+         tester5()
          rospy.loginfo("process done and quit" )
      except rospy.ROSInterruptException:
          rospy.loginfo("node terminated.")
