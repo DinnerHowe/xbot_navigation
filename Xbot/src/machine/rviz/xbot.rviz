@@ -434,6 +434,14 @@ Visualization Manager:
       Topic: /move_base/action_plan/jps
       Unreliable: false
       Value: false
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /base_controller_key_node
+      Name: plan_nodes
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48

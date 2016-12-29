@@ -12,6 +12,7 @@ This programm is tested on kuboki base turtlebot.
 """
 import rospy
 from PlanAlgrithmsLib import AlgrithmsLib
+from PlanAlgrithmsLib import CVlib
 from PlanAlgrithmsLib import maplib
 from geometry_msgs.msg import PointStamped
 from geometry_msgs.msg import PoseStamped
@@ -411,6 +412,26 @@ class tester5():
     def MapCB(self, map):
         self.map = map
 
+class tester6():
+    def __init__(self):
+        rospy.Subscriber('/robot_position_in_map', PoseStamped, self.odomCB)
+        rospy.Subscriber('/move_base/action_plan', Path, self.planCB)
+        rospy.spin()
+
+    def odomCB(self, odom):
+        print CVlib.GetAngle(odom.pose.orientation)
+        self.odom = odom
+
+    def planCB(self, data):
+        self.path = []
+        self.path = data.poses
+        segment = [i.pose.position for i in self.path]
+        nodes = CVlib.Linear_analyse(segment)
+        node = nodes[0]
+        Diff_x = round(node.x - self.odom.position.x, 2)
+        Diff_y = round(node.y - self.odom.position.y, 2)
+        print
+
 if __name__=='__main__':
      rospy.init_node('Plan_tester')
      try:
@@ -419,7 +440,8 @@ if __name__=='__main__':
          # tester2()
          # tester3()
          #tester4()
-         tester5()
+         # tester5()
+         tester6()
          rospy.loginfo("process done and quit" )
      except rospy.ROSInterruptException:
          rospy.loginfo("node terminated.")

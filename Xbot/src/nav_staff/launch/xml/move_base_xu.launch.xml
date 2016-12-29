@@ -52,7 +52,7 @@
     <!--&lt;!&ndash;<arg name="PlanTopic" default='/move_base/action_plan' />&ndash;&gt;-->
     <!--&lt;!&ndash;<arg name="OdomTopic" default='/robot_position_in_map' />&ndash;&gt;-->
     <!--&lt;!&ndash;<arg name="MotionTopice" default='navigation_velocity_smoother/raw_cmd_vel' />&ndash;&gt;-->
-    <!--<arg name="MotionTopice" default='/cmd_vel' />-->
+    <!--<arg name="MotionTopice" default='/cmd_vel_mux/input/navi' />-->
     <!--<arg name="PathBias" default='0.1' />-->
     <!--<arg name="MaxLinearSP" default='0.3' />-->
     <!--<arg name="MaxAngularSP" default='0.37' />-->
