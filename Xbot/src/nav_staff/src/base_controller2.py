@@ -180,6 +180,7 @@ class BaseController:
      else:
       return False
 
+
     def FrontMAX(self, Predict_Distance, Forward_Distance, odom, path):
 
      FrontLine = CVlib.SLF()
@@ -196,6 +197,7 @@ class BaseController:
       return True
      else:
       return False
+
 
     def AngularDrift(self, goal, odom):
 

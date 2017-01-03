@@ -430,7 +430,7 @@ class tester6():
         node = nodes[0]
         Diff_x = round(node.x - self.odom.position.x, 2)
         Diff_y = round(node.y - self.odom.position.y, 2)
-        print
+        # print
 
 if __name__=='__main__':
      rospy.init_node('Plan_tester')

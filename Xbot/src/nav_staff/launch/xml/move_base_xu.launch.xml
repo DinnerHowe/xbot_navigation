@@ -1,7 +1,13 @@
 <launch>
 
- <!--<include file="$(find nav_staff)/launch/xml/velocity_smoother.launch.xml"/>-->
- <!--<include file="$(find nav_staff)/launch/xml/safety_controller.launch.xml"/>-->
+    <include file="$(find nav_staff)/launch/xml/velocity_smoother.launch.xml"/>
+    <!--<include file="$(find nav_staff)/launch/xml/safety_controller.launch.xml"/>-->
+
+
+    <arg name="GoalTopic"               default="/clicked_point"/>
+    <arg name="PlanTopic"               default="/move_base/action_plan"/>
+    <arg name="PublishFrequency"        default="0.01"/>
+    <arg name="OdomTopic"               default="/robot_position_in_map"/>
 
  <!--<arg name="odom_frame_id"   default="odom"/>-->
  <!--<arg name="base_frame_id"   default="base_footprint"/>-->
@@ -43,46 +49,36 @@
  <!--</node>-->
 
 
-    <arg name="GoalTopic"               default="/clicked_point"/>
-    <arg name="PlanTopic"               default="/move_base/action_plan"/>
-    <arg name="PublishFrequency"        default="0.01"/>
-    <arg name="OdomTopic"               default="/robot_position_in_map"/>
+ <!--base controller-->
+    <arg name="MotionTopice" default='cmd_vel_mux/input/smoother' />
+    <arg name="PathAcc"      default='1.0' />
+    <arg name="MaxLinearSP"  default='0.5' />
+    <arg name="MinLinearSP"  default='0.1' />
+    <arg name="AngularSP"    default='0.3' />
+    <arg name="AngularBias"  default='0.3' />
+    <arg name="AngularFree"  default="0.1745"/>
+    <arg name="GoalTolerant" default="0.01"/>
+    <arg name="visual_test"  default="True"/>
+    <node pkg="nav_staff" type="base_controller.py" respawn="true" name="BaseController_X" output="screen">
 
- <!--&lt;!&ndash;base controller&ndash;&gt;-->
-    <!--&lt;!&ndash;<arg name="PlanTopic" default='/move_base/action_plan' />&ndash;&gt;-->
-    <!--&lt;!&ndash;<arg name="OdomTopic" default='/robot_position_in_map' />&ndash;&gt;-->
-    <!--&lt;!&ndash;<arg name="MotionTopice" default='navigation_velocity_smoother/raw_cmd_vel' />&ndash;&gt;-->
-    <!--<arg name="MotionTopice" default='/cmd_vel_mux/input/navi' />-->
-    <!--<arg name="PathBias" default='0.1' />-->
-    <!--<arg name="MaxLinearSP" default='0.3' />-->
-    <!--<arg name="MaxAngularSP" default='0.37' />-->
-    <!--<arg name="AngularBias" default='0.6' />-->
-    <!--<arg name="AngularFree" default='0.3' /> &lt;!&ndash;0.1745&ndash;&gt;-->
-    <!--<arg name="PredictDistance" default="2"/>-->
-    <!--&lt;!&ndash;<arg name="PublishFrequency" default="0.01"/>&ndash;&gt;-->
-    <!--<arg name="MinLinearSP" default="0.1"/>-->
-    <!--<arg name="MinAngularSP" default="0.05"/>-->
-    <!--<arg name="GoalTolerant" default="0.05"/>-->
-    <!--<node pkg="nav_staff" type="base_controller.py" respawn="true" name="BaseController_X" output="screen">-->
+        <param name="PlanTopic" value="$(arg PlanTopic)"/>
+        <param name="OdomTopic" value="$(arg OdomTopic)"/>
+        <param name="MotionTopice" value="$(arg MotionTopice"/>
 
-        <!--<param name="PlanTopic" value="$(arg PlanTopic)"/>-->
-        <!--<param name="OdomTopic" value="$(arg OdomTopic)"/>-->
-        <!--<param name="MotionTopice" value="$(arg MotionTopice)"/>-->
+        <param name="PathAcc" value="$(arg PathAcc)"/>
+        <param name="MaxLinearSP" value="$(arg MaxLinearSP)"/>
+        <param name="MinLinearSP" value="$(arg MinLinearSP)"/>
+        <param name="AngularSP" value="$(arg AngularSP)"/>
 
-        <!--<param name="PathBias" value="$(arg PathBias)"/>-->
-        <!--<param name="MaxLinearSP" value="$(arg MaxLinearSP)"/>-->
-        <!--<param name="MaxAngularSP" value="$(arg MaxAngularSP)"/>-->
-        <!--<param name="MinAngularSP" value="$(arg MinAngularSP)"/>-->
+        <param name="AngularBias" value="$(arg AngularBias)"/>
+        <param name="AngularFree" value="$(arg AngularFree)"/>
+        <param name="PublishFrequency" value="$(arg PublishFrequency)"/>
+        <param name="GoalTolerant" value="$(arg GoalTolerant)"/>
 
-        <!--<param name="AngularBias" value="$(arg AngularBias)"/>-->
-        <!--<param name="AngularFree" value="$(arg AngularFree)"/>-->
-        <!--<param name="PredictDistance" value="$(arg PredictDistance)"/>-->
+        <param name="visual_test" value="$(arg visual_test)"/>
+    </node>
 
-        <!--<param name="PublishFrequency" value="$(arg PublishFrequency)"/>-->
-        <!--<param name="MinLinearSP" value="$(arg MinLinearSP)"/>-->
 
-        <!--<param name="GoalTolerant" value="$(arg GoalTolerant)"/>-->
-    <!--</node>-->
 
     <!--&lt;!&ndash; plan fixer&ndash;&gt;-->
     <!--<arg name="PositionFree" default="0.1" />-->
@@ -98,11 +94,9 @@
         <!--<param name="GoalTopic" value="$(arg GoalTopic)"/>-->
     <!--</node>-->
 
+
+
     <!--planner-->
-    <!--<arg name="GoalTopic"               default="/clicked_point"/>-->
-    <!--<arg name="PlanTopic"               default="/move_base/action_plan"/>-->
-    <!--<arg name="PublishFrequency"        default="0.01"/>-->
-    <!--<arg name="OdomTopic"               default="/robot_position_in_map"/>-->
     <arg name="MapTopic"                default="/cost_plan_map"/>
     <arg name="visual_debug"            default="True"/>
     <arg name="detect_scale"            default="30"/>

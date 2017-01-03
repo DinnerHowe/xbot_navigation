@@ -3,7 +3,7 @@
 """
 底盘移动控制软件
 
-Copyright (c) 2016 Xu Zhihao (Howe).  All rights reserved.
+Copyright (c) 2017 Xu Zhihao (Howe).  All rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 
@@ -12,7 +12,6 @@ This programm is tested on kuboki base turtlebot.
 """
 import rospy
 import numpy
-import copy
 from PlanAlgrithmsLib import CVlib
 from PlanAlgrithmsLib import maplib
 import collections
@@ -26,7 +25,7 @@ from threading import Lock
 from geometry_msgs.msg import Quaternion
 
 Tasks = list()
-cmd_queue = collections.deque(maxlen=5)
+cmd_queue = collections.deque(maxlen=1)
 
 
 class ClearParams:
@@ -34,17 +33,18 @@ class ClearParams:
         rospy.delete_param('~PlanTopic')
         rospy.delete_param('~OdomTopic')
         rospy.delete_param('~MotionTopice')
-        rospy.delete_param('~PathBias')
 
+        rospy.delete_param('~PathAcc')
         rospy.delete_param('~MaxLinearSP')
         rospy.delete_param('~MinLinearSP')
-        rospy.delete_param('~MaxAngularSP')
-        rospy.delete_param('~MinAngularSP')
+        rospy.delete_param('~AngularSP')
 
         rospy.delete_param('~AngularBias')
         rospy.delete_param('~AngularFree')
         rospy.delete_param('~PublishFrequency')
         rospy.delete_param('~GoalTolerant')
+
+        rospy.delete_param('~visual_test')
 
 
 
@@ -67,29 +67,26 @@ class BaseController:
         self.OdomTopic = rospy.get_param('~OdomTopic')
 
         if not rospy.has_param('~MotionTopice'):
-            rospy.set_param('~MotionTopice',
-                            '/cmd_vel_mux/input/navi')  # cmd_vel_mux/input/navi #/navigation_velocity_smoother/raw_cmd_vel
+            # cmd_vel_mux/input/navi #/navigation_velocity_smoother/raw_cmd_vel
+            rospy.set_param('~MotionTopice', 'cmd_vel_mux/input/smoother')
         self.MotionTopice = rospy.get_param('~MotionTopice')
 
-        if not rospy.has_param('~PathBias'):  # how accuracy the robot will attemped to move to next path goal
-            rospy.set_param('~PathBias', 0.1)
-        self.PathBias = rospy.get_param('~PathBias')
+        # how accuracy the robot will attemped to move to next path goal
+        if not rospy.has_param('~PathAcc'):
+            rospy.set_param('~PathAcc', 0.5)
+        self.PathAcc = rospy.get_param('~PathAcc')
 
         if not rospy.has_param('~MaxLinearSP'):
             rospy.set_param('~MaxLinearSP', 0.5)
         self.MaxLinearSP = rospy.get_param('~MaxLinearSP')
 
         if not rospy.has_param('~MinLinearSP'):
-         rospy.set_param('~MinLinearSP', 0.01)
+         rospy.set_param('~MinLinearSP', 0.1)
         self.MinLinearSP = rospy.get_param('~MinLinearSP')
 
-        if not rospy.has_param('~MaxAngularSP'):
-            rospy.set_param('~MaxAngularSP', 0.5)
-        self.MaxAngularSP = rospy.get_param('~MaxAngularSP')
-
-        if not rospy.has_param('~MinAngularSP'):
-         rospy.set_param('~MinAngularSP', 0.05)
-        self.MinAngularSP = rospy.get_param('~MinAngularSP')
+        if not rospy.has_param('~AngularSP'):
+         rospy.set_param('~AngularSP', 0.3)
+        self.AngularSP = rospy.get_param('~AngularSP')
 
         if not rospy.has_param('~AngularBias'):
             rospy.set_param('~AngularBias', 0.3)
@@ -100,12 +97,16 @@ class BaseController:
         self.AngularFree = rospy.get_param('~AngularFree')
 
         if not rospy.has_param('~PublishFrequency'):
-         rospy.set_param('~PublishFrequency', 0.05) #20hz
+         rospy.set_param('~PublishFrequency', 0.01) #100hz
         self.PublishFrequency = rospy.get_param('~PublishFrequency')
 
         if not rospy.has_param('~GoalTolerant'):
-         rospy.set_param('~GoalTolerant', 0.05)
+         rospy.set_param('~GoalTolerant', 0.01)
         self.GoalTolerant = rospy.get_param('~GoalTolerant')
+
+        if not rospy.has_param('~visual_test'):
+         rospy.set_param('~visual_test', True)
+        self.visual_test = rospy.get_param('~visual_test')
 
         self.path = []
 
@@ -113,178 +114,59 @@ class BaseController:
 
         self.locker = Lock()
 
-        self.visual_test = False # set True if you wanna visualise tester process
+        self.cmd_vel = Twist()
 
     def OdomCB(self, odom):
         global Tasks
         cur_pose = odom.pose
         if Tasks != []:
             cur_goal = Tasks[0]
-            if abs(round(cur_pose.position.x - cur_goal.x, 2)) <= 0.05 and abs(round(cur_position.position.y - cur_goal.y, 2)) <= 0.05:
+            if abs(round(cur_pose.position.x - cur_goal.x, 2)) <= self.GoalTolerant and abs(round(cur_pose.position.y - cur_goal.y, 2)) <= self.GoalTolerant:
                 Tasks.remove(cur_goal)
+                rospy.loginfo('arrive goal')
+                self.cmd_vel = Twist()
             else:
                 self.count_cmds(cur_pose, cur_goal)
 
     def count_cmds(self, cur_pose, cur_goal):
         Diff_x = round(cur_goal.x - cur_pose.position.x, 2)
         Diff_y = round(cur_goal.y - cur_pose.position.y, 2)
-        if numpy.sqrt(Diff_x**2 + Diff_y**2) > 20:
-            #self.acc_speed()
-            self.DiffControl(cur_pose, cur_goal, self.PathBias, Diff_x, Diff_y)
+        cur_angle = CVlib.GetAngle(cur_pose.orientation)
+        self.Vector(Diff_x, Diff_y, cur_angle)
 
-            pass
-        else:
-            self.DiffControl(cur_pose, cur_goal, self.PathBias, Diff_x, Diff_y)
-            pass
-
-    def DiffControl(self, cur_pose, cur_goal, limit, Diff_x, Diff_y):
-        cmd = Twist()
+    def Vector(self, Diff_x, Diff_y, cur_angle):
+        goal_linear = numpy.sqrt(Diff_x**2 + Diff_y**2)
+        cmd_vector = Twist()
         # anglar
         if Diff_x > 0 and Diff_y > 0:
-            cmd.angular.z = -self.MinLinearSP
+            goal_angle = numpy.arctan(Diff_y/Diff_x)
         elif Diff_x < 0 and Diff_y >0:
-            cmd.angular.z = self.MinLinearSP
+            goal_angle = numpy.pi + numpy.arctan(Diff_y/Diff_x)
         elif Diff_x < 0 and Diff_y < 0:
-            cmd.angular.z = self.MinLinearSP
+            goal_angle = -numpy.pi + numpy.arctan(Diff_y/Diff_x)
         elif Diff_x > 0 and Diff_y < 0:
-            cmd.angular.z = -self.MinLinearSP
+            goal_angle = numpy.arctan(Diff_y/Diff_x)
         elif Diff_x == 0 and Diff_y != 0:
             if Diff_y > 0:
-                cmd.angular.z = 0
+                goal_angle = numpy.pi/2.0
             elif Diff_y <0:
-                cmd.angular.z = -self.MinLinearSP
+                goal_angle = -numpy.pi/2.0
         elif Diff_y == 0 and Diff_x != 0:
             if Diff_x > 0:
-                cmd.angular.z = -self.MinLinearSP
+                goal_angle = 0
             elif Diff_x < 0:
-                cmd.angular.z = self.MinLinearSP
+                goal_angle = -numpy.pi
         elif Diff_y == 0 and Diff_x == 0:
-            rospy.loginfo('arriving goal orientation...')
+            cmd_vector.linear.x = 0.0
+            cmd_vector.angular.z = 0.0
         else:
-            pass
-        # linear
-        if cmd.angular.z < 0:
-            if Diff_y > 0 and Diff_x <= self.PathBias:
-                cmd.linear = self.MinLinearSP
+            rospy.logerr('unkown ')
 
+        cmd_vector.angular.z = round(goal_angle - cur_angle, 3)
+        cmd_vector.linear.x = round(goal_linear, 3)
 
-
-
-    # def DiffControl(self, odom, goal, limit, x_drift, y_drift):
-    #     cmd = Twist()
-    #     CrossFire = False
-    #     angular_drift = self.AngularDrift(x_drift, y_drift)
-    #
-    #     Gorientation = self.GoalOrientation(angular_drift)
-    #     linear = numpy.sqrt(x_drift ** 2 + y_drift ** 2)
-    #
-    #     GoalAngle = CVlib.GetAngle(Gorientation)
-    #     OdomAngle = CVlib.GetAngle(odom.orientation)
-    #
-    #     # 如果goal和当前朝向相同
-    #     if GoalAngle * OdomAngle >= 0:
-    #         cmdtwist = GoalAngle - OdomAngle
-    #
-    #     # 如果不同边（存在符号更变）：只需要以最快速度过界，从而达到同边即可
-    #     else:
-    #         CrossFire = True
-    #         GoalToCPP = numpy.pi - abs(GoalAngle)
-    #         OdomToCPP = numpy.pi - abs(OdomAngle)
-    #
-    #         GoalToCPO = abs(GoalAngle)
-    #         OdomToCPO = abs(OdomAngle)
-    #
-    #         # 不同边,判断临界线
-    #         # goal 临界线
-    #         if GoalToCPP < GoalToCPO:
-    #             GCriticalLine = numpy.pi
-    #
-    #         else:
-    #             GCriticalLine = 0
-    #         # Odom 临界线
-    #         if OdomToCPP < GoalToCPO:
-    #             OCriticalLine = numpy.pi
-    #
-    #         else:
-    #             OCriticalLine = 0
-    #
-    #         # 不同边,同临界线
-    #         if OCriticalLine == GCriticalLine:
-    #             #rospy.loginfo('reg as same critical line')
-    #             # 不同边, pi 临界线 临界角
-    #             if OCriticalLine == numpy.pi:
-    #                 #rospy.loginfo('changing line in pi')
-    #                 if GoalAngle >= 0:
-    #                     #rospy.loginfo('goal upon line in pi')
-    #                     OdomToC = -abs(abs(GoalAngle) - abs(OdomAngle))
-    #                 else:
-    #                     #rospy.loginfo('goal under line in pi')
-    #                     OdomToC = abs(abs(GoalAngle) - abs(OdomAngle))
-    #
-    #             # 不同边,0 临界线 临界角
-    #             elif OCriticalLine == 0:  #
-    #                 #rospy.loginfo('changing line in 0')
-    #                 if GoalAngle >= 0:
-    #                     #rospy.loginfo('goal upon line in pi')
-    #                     OdomToC = abs(abs(GoalAngle) - abs(OdomAngle))
-    #                 else:
-    #                     #rospy.loginfo('goal under line in pi')
-    #                     OdomToC = -abs(abs(GoalAngle) - abs(OdomAngle))
-    #             else:
-    #                 #rospy.loginfo('differ changing point in ???')
-    #                 pass
-    #
-    #         # 不同边, 不同临界线
-    #         else:
-    #             #rospy.loginfo('reg as differ critical line')
-    #             # 不同边,  pi 临界线
-    #             if OdomToCPP + GoalToCPP < OdomToCPO + GoalToCPO:
-    #                 #rospy.loginfo('differ changing point in pi')
-    #                 OdomToC = OdomToCPP
-    #             # 不同边, 0 临界线
-    #             elif OdomToCPP + GoalToCPP >= OdomToCPO + GoalToCPO:
-    #                 #rospy.loginfo('differ changing point in 0')
-    #                 OdomToC = OdomToCPO
-    #             else:
-    #                 #rospy.loginfo('differ changing point in ???')
-    #                 pass
-    #
-    #         # 不同边, 过临界线，转角速度
-    #         if abs(OdomToC) <= 2 * abs(self.AngularBias):
-    #             cmdtwist = OdomToC + 0.1 * OdomToC / (abs(OdomToC))
-    #
-    #         else:
-    #             cmdtwist = abs(self.MaxAngularSP) * OdomToC / abs(OdomToC)
-    #
-    #     # 是当前坐标否在误差允许之内
-    #     if abs(x_drift) > limit or abs(y_drift) > limit:
-    #
-    #         if abs(cmdtwist) >= self.AngularBias:
-    #             rospy.loginfo('in position twist')
-    #             cmd.angular.z = cmdtwist  # self.MaxAngularSP
-    #         elif self.AngularFree < abs(cmdtwist) < self.AngularBias:
-    #             rospy.loginfo('small circle')
-    #             cmd.angular.z = cmdtwist
-    #             cmd.linear.x = self.MinLinearSP
-    #         elif abs(cmdtwist) <= self.AngularFree:
-    #             if CrossFire:
-    #                 rospy.loginfo('in position twist')
-    #                 cmd.angular.z = cmdtwist
-    #             else:
-    #                 rospy.loginfo('forward')
-    #                 cmd.angular.z = cmdtwist
-    #                 cmd.linear.x = self.MinLinearSP
-    #         else:
-    #             rospy.loginfo('unknow situation')
-    #
-    #     else:
-    #         #rospy.loginfo('robot in goal position')
-    #         if self.AngularFree < abs(cmdtwist):
-    #             cmd.angular.z = cmdtwist
-    #         else:
-    #             rospy.loginfo('robot arrive goal orientation')
-    #             pass
-    #     return cmd
+        global cmd_queue
+        cmd_queue.append(cmd_vector)
 
     def AngularDrift(self, Diff_x, Diff_y):
 
@@ -332,22 +214,41 @@ class BaseController:
 
     def PubcmdCB(self, data):
         global cmd_queue
+        cmd = Twist()
         if len(cmd_queue) > 0:
-            cmd = cmd_queue.pop()
-            cmd_vel = rospy.Publisher(self.MotionTopice, Twist, queue_size=1)
+            self.cmd_vel = cmd_queue.pop()
+        cmd_pub = rospy.Publisher(self.MotionTopice, Twist, queue_size=1)
+        if self.cmd_vel != Twist():
+            if abs(self.cmd_vel.angular.z) > self.AngularBias:
+                if abs(self.cmd_vel.angular.z) < numpy.pi:
+                    if self.cmd_vel.angular.z > 0:
+                        cmd.angular.z = self.AngularSP
+                    else:
+                        cmd.angular.z = -self.AngularSP
+                else:
+                    if self.cmd_vel.angular.z > numpy.pi:
+                        cmd.angular.z = -self.AngularSP
+                    else:
+                        cmd.angular.z = self.AngularSP
+                cmd_pub.publish(cmd)
+            else:
+                if self.cmd_vel.angular.z != 0 and self.cmd_vel.linear.x != 0:
+                    cmd.angular.z = self.cmd_vel.angular.z
+                    if abs(self.cmd_vel.angular.z) < self.AngularFree:
+                        if self.cmd_vel.linear.x > self.PathAcc:
+                            self.cmd_vel.linear.x = self.MaxLinearSP
+                        else:
+                            cmd.linear.x = self.cmd_vel.linear.x
+                    else:
+                        if self.cmd_vel.linear.x > self.PathAcc:
+                            self.cmd_vel.linear.x = self.MinLinearSP
+                        else:
+                            if self.cmd_vel.linear.x > self.GoalTolerant:
+                                cmd.linear.x = self.cmd_vel.linear.x
+                            else:
+                                self.cmd_vel.linear.x = 0
+                    cmd_pub.publish(cmd)
 
-            if cmd.linear.x != 0:
-                linear_symbol = cmd.linear.x/abs(cmd.linear.x)
-            if cmd.angular.z != 0:
-                angle_symbol = cmd.angular.z/abs(cmd.angular.z)
-
-            if abs(cmd.linear.x) > self.MaxLinearSP:
-                cmd.linear.x = self.MaxLinearSP # * linear_symbol
-
-            if abs(cmd.angular.z) > self.MaxAngularSP:
-                cmd.angular.z = self.MaxAngularSP * angle_symbol
-
-            cmd_vel.publish(cmd)
 
     def linear_analyse(self, points):
         nodes = CVlib.Linear_analyse(points)
