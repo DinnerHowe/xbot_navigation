@@ -1,13 +1,16 @@
 <launch>
+    <arg name="GoalTopic"               value="/clicked_point"/>
+    <arg name="PlanTopic"               value="/move_base/action_plan"/>
+    <arg name="PublishFrequency"        value="0.01"/>
+    <arg name="OdomTopic"               value="/robot_position_in_map"/>
+    <arg name="MotionTopice"            value='cmd_vel_mux/input/smoother' />
 
-    <include file="$(find nav_staff)/launch/xml/velocity_smoother.launch.xml"/>
+    <arg name="CmdTopice"               value='cmd_vel_mux/input/navi' />
+    <include file="$(find nav_staff)/launch/xml/cmd_smoother.launch.xml">
+        <param name="MotionTopice"          value="$(arg MotionTopice)"/>
+        <param name="CmdTopice"             value="$(arg CmdTopice)"/>
+    </include>
     <!--<include file="$(find nav_staff)/launch/xml/safety_controller.launch.xml"/>-->
-
-
-    <arg name="GoalTopic"               default="/clicked_point"/>
-    <arg name="PlanTopic"               default="/move_base/action_plan"/>
-    <arg name="PublishFrequency"        default="0.01"/>
-    <arg name="OdomTopic"               default="/robot_position_in_map"/>
 
  <!--<arg name="odom_frame_id"   default="odom"/>-->
  <!--<arg name="base_frame_id"   default="base_footprint"/>-->
@@ -50,15 +53,14 @@
 
 
  <!--base controller-->
-    <arg name="MotionTopice" default='cmd_vel_mux/input/smoother' />
-    <arg name="PathAcc"      default='5.0' />
-    <arg name="MaxLinearSP"  default='0.5' />
-    <arg name="MinLinearSP"  default='0.1' />
-    <arg name="AngularSP"    default='0.3' />
-    <arg name="AngularBias"  default='0.3' />
-    <arg name="AngularFree"  default="0.1745"/>
-    <arg name="GoalTolerant" default="0.01"/>
-    <arg name="visual_test"  default="True"/>
+    <arg name="PathAcc"                 default='5.0' />
+    <arg name="MaxLinearSP"             default='0.5' />
+    <arg name="MinLinearSP"             default='0.1' />
+    <arg name="AngularSP"               default='0.3' />
+    <arg name="AngularBias"             default='0.3' />
+    <arg name="AngularFree"             default="0.1745"/>
+    <arg name="GoalTolerant"            default="0.01"/>
+    <arg name="visual_test"             default="True"/>
     <node pkg="nav_staff" type="base_controller.py" respawn="true" name="BaseController_X" output="screen">
 
         <param name="PlanTopic"         value="$(arg PlanTopic)"/>
@@ -97,9 +99,9 @@
 
 
     <!--planner-->
-    <arg name="MapTopic"                default="/cost_plan_map"/>
-    <arg name="visual_debug"            default="True"/>
-    <arg name="detect_scale"            default="30"/>
+    <arg name="MapTopic"                    default="/cost_plan_map"/>
+    <arg name="visual_debug"                default="True"/>
+    <arg name="detect_scale"                default="30"/>
     <node pkg="nav_staff" type="Planner.py" respawn="true" name="Planner" output="screen">
         <param name="GoalTopic"               value="$(arg GoalTopic)"/>
         <param name="MapTopic"                value="$(arg MapTopic)"/>
@@ -116,12 +118,12 @@
     </include>>
 
     <!--cost plan map-->
-    <arg name="obstacle_thread"     value="80" />
-    <arg name="root_topic"          value="/test_obstacles" />
-    <arg name="devergency_scale"    value="7" />
-    <arg name="use_map_topic"       value="/map" />
-    <arg name="publish_hz"          value="0.01" />
-    <arg name="use_plan_map_topic"  value="/cost_plan_map" />
+    <arg name="obstacle_thread"         value="80" />
+    <arg name="root_topic"              value="/test_obstacles" />
+    <arg name="devergency_scale"        value="7" />
+    <arg name="use_map_topic"           value="/map" />
+    <arg name="publish_hz"              value="0.01" />
+    <arg name="use_plan_map_topic"      value="/cost_plan_map" />
     <include file="$(find nav_staff)/launch/xml/cost_plan_map.launch.xml">
         <arg name="obstacle_thread"       value="$(arg obstacle_thread)"/>
         <arg name="root_topic"            value="$(arg root_topic)"/>

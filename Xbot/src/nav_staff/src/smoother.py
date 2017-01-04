@@ -25,7 +25,9 @@ class smoother():
         if not rospy.has_param('~MotionTopice'):
             rospy.set_param('~MotionTopice', 'cmd_vel_mux/input/smoother')
         self.MotionTopice = rospy.get_param('~MotionTopice')
-
+        if not rospy.has_param('~CmdTopice'):
+            rospy.set_param('~CmdTopice', 'cmd_vel_mux/input/navi')
+        self.MotionTopice = rospy.get_param('~CmdTopice')
         self.pre_cmd = None
 
     def CMDCB(self, cmd):
