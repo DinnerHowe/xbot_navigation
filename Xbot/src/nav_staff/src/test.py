@@ -24,6 +24,9 @@ import numpy
 import time
 from threading import Lock
 import collections
+from geometry_msgs.msg import Twist
+
+
 
 init = True
 
@@ -432,6 +435,23 @@ class tester6():
         Diff_y = round(node.y - self.odom.position.y, 2)
         # print
 
+class tester7():
+    def __init__(self):
+        self.define()
+        rospy.Subscriber(self.MotionTopice, Twist, self.CMDCB)
+        rospy.spin()
+
+    def define(self):
+        if not rospy.has_param('~MotionTopice'):
+            rospy.set_param('~MotionTopice', 'cmd_vel_mux/input/smoother')
+        self.MotionTopice = rospy.get_param('~MotionTopice')
+        self.pre_cmd = None
+
+    def CMDCB(self, cmd):
+        if self.pre_cmd!= cmd:
+            self.pre_cmd = cmd
+            print self.pre_cmd
+
 if __name__=='__main__':
      rospy.init_node('Plan_tester')
      try:
@@ -441,7 +461,8 @@ if __name__=='__main__':
          # tester3()
          #tester4()
          # tester5()
-         tester6()
+         # tester6()
+         tester7()
          rospy.loginfo("process done and quit" )
      except rospy.ROSInterruptException:
          rospy.loginfo("node terminated.")

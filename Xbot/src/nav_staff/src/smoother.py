@@ -13,13 +13,12 @@ This programm is tested on kuboki base turtlebot.
 """
 
 import rospy
-from PlanAlgrithmsLib import CVlib
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import Twist
 
 class smoother():
     def __init__(self):
         self.define()
-        rospy.Subscriber(self.MotionTopice, PoseStamped, self.CMDCB)
+        rospy.Subscriber(self.MotionTopice, Twist, self.CMDCB)
         rospy.spin()
 
     def define(self):
@@ -30,9 +29,28 @@ class smoother():
         self.pre_cmd = None
 
     def CMDCB(self, cmd):
-        if self.pre_cmd != cmd:
+        print 'cmd: ',cmd.linear.x
+        if self.pre_cmd == None:
             self.pre_cmd = cmd
+        if abs(round(self.pre_cmd.linear.x - cmd.linear.x, 2)) >= 0.01:
+            self.pre_cmd.linear.x += self._sign(self.pre_cmd.linear.x - cmd.linear.x)* 0.01
+            print 'pre_cmd: ',self.pre_cmd.linear.x, '\n'
+        else:
+            self.pre_cmd = cmd
+        self.PUB(self.pre_cmd)
 
+    def _sign(self, data):
+        if data > 0:
+            return -1
+        elif data < 0:
+            return 1
+        else:
+            return 0
+
+    def PUB(self, data):
+        publish = rospy.Publisher('cmd_vel_mux/input/navi', Twist, queue_size=1)
+        publish.publish(data)
+        # print data,'\n'
 
 if __name__=='__main__':
      rospy.init_node('Cmd_Smoother')

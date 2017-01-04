@@ -51,7 +51,7 @@
 
  <!--base controller-->
     <arg name="MotionTopice" default='cmd_vel_mux/input/smoother' />
-    <arg name="PathAcc"      default='1.0' />
+    <arg name="PathAcc"      default='5.0' />
     <arg name="MaxLinearSP"  default='0.5' />
     <arg name="MinLinearSP"  default='0.1' />
     <arg name="AngularSP"    default='0.3' />
@@ -61,21 +61,21 @@
     <arg name="visual_test"  default="True"/>
     <node pkg="nav_staff" type="base_controller.py" respawn="true" name="BaseController_X" output="screen">
 
-        <param name="PlanTopic" value="$(arg PlanTopic)"/>
-        <param name="OdomTopic" value="$(arg OdomTopic)"/>
-        <param name="MotionTopice" value="$(arg MotionTopice"/>
+        <param name="PlanTopic"         value="$(arg PlanTopic)"/>
+        <param name="OdomTopic"         value="$(arg OdomTopic)"/>
+        <param name="MotionTopice"      value="$(arg MotionTopice)"/>
 
-        <param name="PathAcc" value="$(arg PathAcc)"/>
-        <param name="MaxLinearSP" value="$(arg MaxLinearSP)"/>
-        <param name="MinLinearSP" value="$(arg MinLinearSP)"/>
-        <param name="AngularSP" value="$(arg AngularSP)"/>
+        <param name="PathAcc"           value="$(arg PathAcc)"/>
+        <param name="MaxLinearSP"       value="$(arg MaxLinearSP)"/>
+        <param name="MinLinearSP"       value="$(arg MinLinearSP)"/>
+        <param name="AngularSP"         value="$(arg AngularSP)"/>
 
-        <param name="AngularBias" value="$(arg AngularBias)"/>
-        <param name="AngularFree" value="$(arg AngularFree)"/>
-        <param name="PublishFrequency" value="$(arg PublishFrequency)"/>
-        <param name="GoalTolerant" value="$(arg GoalTolerant)"/>
+        <param name="AngularBias"       value="$(arg AngularBias)"/>
+        <param name="AngularFree"       value="$(arg AngularFree)"/>
+        <param name="PublishFrequency"  value="$(arg PublishFrequency)"/>
+        <param name="GoalTolerant"      value="$(arg GoalTolerant)"/>
 
-        <param name="visual_test" value="$(arg visual_test)"/>
+        <param name="visual_test"       value="$(arg visual_test)"/>
     </node>
 
 

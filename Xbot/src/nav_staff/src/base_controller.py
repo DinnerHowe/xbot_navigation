@@ -126,44 +126,62 @@ class BaseController:
                 rospy.loginfo('arrive goal')
                 self.cmd_vel = Twist()
             else:
+                rospy.loginfo('go to goal...')
                 self.count_cmds(cur_pose, cur_goal)
 
     def count_cmds(self, cur_pose, cur_goal):
+        print 'count cmds'
         Diff_x = round(cur_goal.x - cur_pose.position.x, 2)
         Diff_y = round(cur_goal.y - cur_pose.position.y, 2)
         cur_angle = CVlib.GetAngle(cur_pose.orientation)
         self.Vector(Diff_x, Diff_y, cur_angle)
 
     def Vector(self, Diff_x, Diff_y, cur_angle):
+        print 'Vector'
         goal_linear = numpy.sqrt(Diff_x**2 + Diff_y**2)
         cmd_vector = Twist()
         # anglar
         if Diff_x > 0 and Diff_y > 0:
             goal_angle = numpy.arctan(Diff_y/Diff_x)
+            # print '1'
         elif Diff_x < 0 and Diff_y >0:
             goal_angle = numpy.pi + numpy.arctan(Diff_y/Diff_x)
+            # print '2'
         elif Diff_x < 0 and Diff_y < 0:
             goal_angle = -numpy.pi + numpy.arctan(Diff_y/Diff_x)
+            # print '3'
         elif Diff_x > 0 and Diff_y < 0:
             goal_angle = numpy.arctan(Diff_y/Diff_x)
+            # print '4'
         elif Diff_x == 0 and Diff_y != 0:
             if Diff_y > 0:
                 goal_angle = numpy.pi/2.0
+                # print '5'
             elif Diff_y <0:
                 goal_angle = -numpy.pi/2.0
+                # print '6'
+            else:
+                rospy.logerr('error type 1')
         elif Diff_y == 0 and Diff_x != 0:
             if Diff_x > 0:
-                goal_angle = 0
+                goal_angle = 0.0
+                # print '7'
             elif Diff_x < 0:
                 goal_angle = -numpy.pi
+                # print '8'
+            else:
+                rospy.logerr('error type 2')
         elif Diff_y == 0 and Diff_x == 0:
             cmd_vector.linear.x = 0.0
             cmd_vector.angular.z = 0.0
+            rospy.logwarn('Diff_x Diff_y ==0')
         else:
             rospy.logerr('unkown ')
 
         cmd_vector.angular.z = round(goal_angle - cur_angle, 3)
         cmd_vector.linear.x = round(goal_linear, 3)
+
+        print cmd_vector
 
         global cmd_queue
         cmd_queue.append(cmd_vector)
@@ -232,13 +250,16 @@ class BaseController:
                         cmd.angular.z = self.AngularSP
                 cmd_pub.publish(cmd)
             else:
-                if self.cmd_vel.angular.z != 0 and self.cmd_vel.linear.x != 0:
+                if self.cmd_vel.angular.z != 0 or self.cmd_vel.linear.x != 0:
                     cmd.angular.z = self.cmd_vel.angular.z
                     if abs(self.cmd_vel.angular.z) < self.AngularFree:
-                        if self.cmd_vel.linear.x > self.PathAcc:
+                        if self.cmd_vel.linear.x >= self.PathAcc:
                             self.cmd_vel.linear.x = self.MaxLinearSP
                         else:
-                            cmd.linear.x = self.cmd_vel.linear.x
+                            if self.cmd_vel.linear.x > self.MaxLinearSP:
+                                cmd.linear.x = self.MaxLinearSP
+                            else:
+                                cmd.linear.x = self.cmd_vel.linear.x
                     else:
                         if self.cmd_vel.linear.x > self.PathAcc:
                             self.cmd_vel.linear.x = self.MinLinearSP
@@ -248,6 +269,8 @@ class BaseController:
                             else:
                                 self.cmd_vel.linear.x = 0
                     cmd_pub.publish(cmd)
+                else:
+                    print '11'
 
 
     def linear_analyse(self, points):
