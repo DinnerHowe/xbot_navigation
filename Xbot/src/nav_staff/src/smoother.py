@@ -27,7 +27,8 @@ class smoother():
         self.MotionTopice = rospy.get_param('~MotionTopice')
         if not rospy.has_param('~CmdTopice'):
             rospy.set_param('~CmdTopice', 'cmd_vel_mux/input/navi')
-        self.MotionTopice = rospy.get_param('~CmdTopice')
+        self.MotionTopice = rospy.get_param('~MotionTopice')
+        self.CmdTopic = rospy.get_param('~CmdTopice')
         self.pre_cmd = None
 
     def CMDCB(self, cmd):
@@ -50,7 +51,7 @@ class smoother():
             return 0
 
     def PUB(self, data):
-        publish = rospy.Publisher('cmd_vel_mux/input/navi', Twist, queue_size=1)
+        publish = rospy.Publisher(self.CmdTopic, Twist, queue_size=1)
         publish.publish(data)
         # print data,'\n'
 
