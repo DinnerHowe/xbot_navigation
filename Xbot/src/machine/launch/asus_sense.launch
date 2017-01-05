@@ -16,9 +16,11 @@
  <arg name="depth_registered_processing" default="true"/>
  <arg name="disparity_processing" default="true"/>
  <arg name="disparity_registered_processing" default="true"/>
-
+ <arg name="scan_processing" default= "true"/>
  <!-- Worker threads for the nodelet manager -->
  <arg name="num_worker_threads" default="4" />
+
+ <arg name="scan_topic" default="scan"/>
 
  <include file="$(find machine)/launch/xml/asus_xtion_pro.launch.xml">
   <arg name="camera" value="$(arg camera)"/>

@@ -78,7 +78,7 @@ class grid_map():
    #self.Map.data = copy.deepcopy(self.init_map.data)
    self.Map = self._map_(copy.deepcopy(self.Map))
    self.map_pub.publish(self.Map)
-   rospy.loginfo ('update map')
+   #rospy.loginfo ('update map')
    self.PubMetadata()
    
  def Clear(self,event):

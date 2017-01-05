@@ -30,4 +30,14 @@
   <!--static_transform_publisher x y z qx qy qz qw frame_id child_frame_id  period_in_ms-->
   <node pkg="tf" type="static_transform_publisher" name="map_odom_broadcaster" args="0 0 0 0 0 0 /map /odom 100" />
 
+  <!--amcl odom-->
+  <arg name="target_frame"               value="/map"/>
+  <arg name="source_frame"               value="/base_footprint"/>
+  <arg name="use_odom_topic"             value="/robot_position_in_map"/>
+  <include file="$(find amcl_odom)/launch/robot_position_in_map.launch">
+   <param name="target_frame"   value="$(arg target_frame)"/>
+   <param name="source_frame"   value="$(arg source_frame)"/>
+   <param name="use_odom_topic"   value="$(arg use_odom_topic)"/>
+  </include>
+
 </launch>
