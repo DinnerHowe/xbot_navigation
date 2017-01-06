@@ -416,7 +416,7 @@ Visualization Manager:
       Marker Topic: /ui_marker
       Name: ui_marker
       Namespaces:
-        {}
+        task_points: true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -529,11 +529,11 @@ Visualization Manager:
       Class: rviz/Map
       Color Scheme: map
       Draw Behind: false
-      Enabled: true
+      Enabled: false
       Name: costplan_map
       Topic: /cost_plan_map
       Unreliable: false
-      Value: true
+      Value: false
     - Alpha: 1
       Buffer Length: 1
       Class: rviz/Path
