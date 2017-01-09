@@ -32,10 +32,9 @@ class ClearParams:
 
 
 
-class smoother():
+class fixed():
     def __init__(self):
         self.define()
-        # rospy.Subscriber(self.OdomTopic, PoseStamped, self.OdomCB)
         rospy.Subscriber(self.GoalTopic, PointStamped, self.GoalCB)
         rospy.Timer(self.period, self.PubPlanCB)
         rospy.Timer(self.period*10, self.FinshCB)
@@ -140,7 +139,7 @@ if __name__=='__main__':
      rospy.init_node('fixed_plan_maker')
      try:
          rospy.loginfo( "initialization system")
-         smoother()
+         fixed()
          rospy.loginfo("process done and quit" )
      except rospy.ROSInterruptException:
          rospy.loginfo("node terminated.")
