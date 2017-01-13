@@ -26,6 +26,7 @@ from threading import Lock
 import collections
 from geometry_msgs.msg import Twist
 
+from xbot_msgs.msg import DockInfraRed
 
 
 init = True
@@ -452,6 +453,33 @@ class tester7():
             self.pre_cmd = cmd
             print self.pre_cmd
 
+class tester8():
+    def __init__(self):
+        self.define()
+        rospy.Subscriber(self.MotionTopice, Twist, self.CMDCB)
+        rospy.Timer(rospy.Duration(0.01), self.timer)
+        rospy.spin()
+
+    def define(self):
+        if not rospy.has_param('~MotionTopice'):
+            rospy.set_param('~MotionTopice', 'cmd_vel_mux/input/navi')
+        self.MotionTopice = rospy.get_param('~MotionTopice')
+        self.seq = 0
+        self.status = 1
+
+    def CMDCB(self, data):
+        pub = rospy.Publisher('/sensors/dock_ir', DockInfraRed, queue_size=1)
+        warning = DockInfraRed()
+        warning.header.stamp = rospy.Time.now()
+        warning.header.seq = self.seq
+        self.seq += 1
+        warning.header.frame_id = '/map'
+        warning.danger = int(self.status)
+        pub.publish(warning)
+
+    def timer(self, event):
+        self.status = raw_input('input status')
+
 if __name__=='__main__':
      rospy.init_node('Plan_tester')
      try:
@@ -461,8 +489,9 @@ if __name__=='__main__':
          # tester3()
          #tester4()
          # tester5()
-         # tester6()
-         tester7()
+         tester6()
+         # tester7()
+         # tester8()
          rospy.loginfo("process done and quit" )
      except rospy.ROSInterruptException:
          rospy.loginfo("node terminated.")

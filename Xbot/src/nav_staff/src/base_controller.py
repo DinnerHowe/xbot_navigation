@@ -27,7 +27,6 @@ from geometry_msgs.msg import Quaternion
 Tasks = list()
 cmd_queue = collections.deque(maxlen=1)
 
-
 class ClearParams:
     def __init__(self):
         rospy.delete_param('~PlanTopic')
@@ -45,8 +44,6 @@ class ClearParams:
         rospy.delete_param('~GoalTolerant')
 
         rospy.delete_param('~visual_test')
-
-
 
 class BaseController:
     def __init__(self):
@@ -126,7 +123,7 @@ class BaseController:
                 rospy.loginfo('arrive goal')
                 self.cmd_vel = Twist()
             else:
-                rospy.loginfo('go to goal...')
+                # rospy.loginfo('go to goal...')
                 self.count_cmds(cur_pose, cur_goal)
 
     def count_cmds(self, cur_pose, cur_goal):
@@ -167,6 +164,10 @@ class BaseController:
             rospy.logwarn('Diff_x Diff_y ==0')
         else:
             rospy.logerr('unkown ')
+        if -numpy.pi < cur_angle < -numpy.pi/2.0:
+            cur_angle = -numpy.pi - cur_angle
+            if numpy.pi > goal_angle > numpy.pi / 2.0:
+                goal_angle = numpy.pi - goal_angle
 
         cmd_vector.angular.z = round(goal_angle - cur_angle, 3)
         cmd_vector.linear.x = round(goal_linear, 3)
@@ -215,7 +216,8 @@ class BaseController:
             self.path = PlanPath.poses
             global Tasks
             segment = [i.pose.position for i in self.path]
-            Tasks = self.linear_analyse(segment)
+            if len(segment) >= 2:
+                Tasks = self.linear_analyse(segment)
 
     def PubcmdCB(self, data):
         global cmd_queue
@@ -225,6 +227,7 @@ class BaseController:
         cmd_pub = rospy.Publisher(self.MotionTopice, Twist, queue_size=1)
         if self.cmd_vel != Twist():
             if abs(self.cmd_vel.angular.z) > self.AngularBias:
+                print '>AngularBias', self.cmd_vel.angular.z
                 if abs(self.cmd_vel.angular.z) < numpy.pi:
                     if self.cmd_vel.angular.z > 0:
                         cmd.angular.z = self.AngularSP
@@ -237,27 +240,29 @@ class BaseController:
                         cmd.angular.z = self.AngularSP
                 cmd_pub.publish(cmd)
             else:
-                if self.cmd_vel.angular.z != 0 or self.cmd_vel.linear.x != 0:
-                    cmd.angular.z = self.cmd_vel.angular.z
-                    if abs(self.cmd_vel.angular.z) < self.AngularFree:
+                print '<AngularBias'
+                cmd.angular.z = self.cmd_vel.angular.z
+                if round(abs(self.cmd_vel.angular.z), 2) != 0 or round(self.cmd_vel.linear.x, 2) != 0:
+                    if abs(self.cmd_vel.angular.z) <= self.AngularFree:
                         if self.cmd_vel.linear.x >= self.PathAcc:
-                            self.cmd_vel.linear.x = self.MaxLinearSP
+                            cmd.linear.x = self.MaxLinearSP
                         else:
-                            if self.cmd_vel.linear.x > self.MaxLinearSP:
-                                cmd.linear.x = self.MaxLinearSP
+                            if self.cmd_vel.linear.x > self.MinLinearSP:
+                                cmd.linear.x = self.MinLinearSP
                             else:
                                 cmd.linear.x = self.cmd_vel.linear.x
                     else:
-                        if self.cmd_vel.linear.x > self.PathAcc:
-                            self.cmd_vel.linear.x = self.MinLinearSP
+                        if self.cmd_vel.linear.x >= self.PathAcc:
+                            cmd.linear.x = self.MinLinearSP
                         else:
-                            if self.cmd_vel.linear.x > self.GoalTolerant:
+                            if self.cmd_vel.linear.x >= self.GoalTolerant:
                                 cmd.linear.x = self.cmd_vel.linear.x
                             else:
-                                self.cmd_vel.linear.x = 0
-                    cmd_pub.publish(cmd)
+                                # self.cmd_vel.linear.x = 0
+                                cmd.linear.x = 0
                 else:
                     rospy.logerr('both linear and angular input is zero!')
+                cmd_pub.publish(cmd)
 
 
     def linear_analyse(self, points):

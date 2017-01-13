@@ -14,6 +14,7 @@ This programm is tested on kuboki base turtlebot.
 
 import rospy
 from geometry_msgs.msg import Twist
+from PlanAlgrithmsLib import CMDLib
 
 class smoother():
     def __init__(self):
@@ -43,22 +44,20 @@ class smoother():
         # print 'cmd: ',cmd.linear.x
         if self.pre_cmd == None:
             self.pre_cmd = cmd
+        else:
+            pass
         if abs(round(self.pre_cmd.linear.x - cmd.linear.x, 2)) >= self.accsp:
-            self.pre_cmd.linear.x += self._sign(self.pre_cmd.linear.x - cmd.linear.x)* self.accsp
+            self.pre_cmd.linear.x += CMDLib._sign(self.pre_cmd.linear.x - cmd.linear.x)* self.accsp
             # print 'pre_cmd: ',self.pre_cmd.linear.x, '\n'
         else:
             self.pre_cmd = cmd
         if cmd.linear.x > self.maxsp:
             self.pre_cmd.linear.x = self.maxsp
+        else:
+            pass
         self.PUB(self.pre_cmd)
 
-    def _sign(self, data):
-        if data > 0:
-            return -1
-        elif data < 0:
-            return 1
-        else:
-            return 0
+
 
     def PUB(self, data):
         publish = rospy.Publisher(self.CmdTopic, Twist, queue_size=1)

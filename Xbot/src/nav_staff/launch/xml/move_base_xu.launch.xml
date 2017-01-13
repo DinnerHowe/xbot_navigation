@@ -1,17 +1,17 @@
 <launch>
     <arg name="GoalTopic"               value="/clicked_point" />
     <arg name="PlanTopic"               value="/move_base/action_plan" />
-    <arg name="PublishFrequency"        value="0.01" />
+    <arg name="PublishFrequency"        value="0.02" />
     <arg name="OdomTopic"               value="/robot_position_in_map" />
     <arg name="MotionTopice"            value='cmd_vel_mux/input/smoother' />
 
-    <arg name="fixed_path"              default="true"/>
+    <arg name="fixed_path"              default="false"/>
 
-    <!--<include file="$(find nav_staff)/launch/xml/safety_controller.launch.xml"/>-->    
+    <include file="$(find nav_staff)/launch/xml/safety_controller.launch.xml"/>
 
     <!--base controller-->
-    <arg name="PathAcc"                 default='0.4' />
-    <arg name="MaxLinearSP"             default='0.4' />
+    <arg name="PathAcc"                 default='0.5' />
+    <arg name="MaxLinearSP"             default='0.35' />
     <arg name="MinLinearSP"             default='0.1' />
     <arg name="AngularSP"               default='0.2' />
     <arg name="AngularBias"             default='0.2' />
@@ -43,13 +43,15 @@
     </node>
 
     <arg name="CmdTopice"               value='cmd_vel_mux/input/navi' />
+    <arg name="accsp"                   value='0.01' />
     <include file="$(find nav_staff)/launch/xml/cmd_smoother.launch.xml">
         <arg name="MotionTopice"          value="$(arg MotionTopice)" />
         <arg name="CmdTopice"             value="$(arg CmdTopice)" />
         <arg name='MaxLinearSP'           value='$(arg MaxLinearSP)' />
-        <arg name='accsp'                 value='$(arg PathAcc)' />
+        <arg name='accsp'                 value='$(arg accsp)' />
     </include>
 
+    <!--fixed_path-->
     <!--<include if="$(arg fixed_path)" file="$(find nav_staff)/launch/xml/fixed_plan_maker.launch.xml" />-->
 
     <!--&lt;!&ndash; plan fixer&ndash;&gt;-->
