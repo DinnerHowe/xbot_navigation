@@ -6,9 +6,11 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /RobotModel1
         - /Warning Flag1/Namespaces1
         - /AsusLaserScan1/Autocompute Value Bounds1
-        - /TF2/Frames1
+        - /TF1
+        - /TF1/Frames1
       Splitter Ratio: 0.445672
     Tree Height: 863
   - Class: rviz/Selection
@@ -30,7 +32,7 @@ Panels:
     Experimental: true
     Name: Time
     SyncMode: 0
-    SyncSource: LaserScan
+    SyncSource: ""
 Visualization Manager:
   Class: ""
   Displays:
@@ -247,7 +249,7 @@ Visualization Manager:
       Marker Topic: /robot_uni_marker
       Name: robot_laber
       Namespaces:
-        robot_uni_marker: true
+        {}
       Queue Size: 1
       Value: true
     - Class: rviz/Marker
@@ -321,7 +323,7 @@ Visualization Manager:
       Marker Topic: /robot_orientation
       Name: robot orientation
       Namespaces:
-        robot_uni_marker: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -339,20 +341,6 @@ Visualization Manager:
       Namespaces:
         {}
       Queue Size: 100
-      Value: false
-    - Class: rviz/TF
-      Enabled: false
-      Frame Timeout: 15
-      Frames:
-        All Enabled: true
-      Marker Scale: 1
-      Name: TF
-      Show Arrows: true
-      Show Axes: true
-      Show Names: true
-      Tree:
-        {}
-      Update Interval: 0
       Value: false
     - Alpha: 1
       Buffer Length: 1
@@ -506,19 +494,99 @@ Visualization Manager:
       Use rainbow: false
       Value: true
     - Class: rviz/TF
-      Enabled: false
+      Enabled: true
       Frame Timeout: 15
       Frames:
         All Enabled: false
+        base_footprint:
+          Value: false
+        base_link:
+          Value: false
+        camera_depth_frame:
+          Value: false
+        camera_depth_optical_frame:
+          Value: false
+        camera_link:
+          Value: false
+        camera_platform:
+          Value: false
+        camera_rgb_frame:
+          Value: false
+        camera_rgb_optical_frame:
+          Value: false
+        frontleft_omniwheel:
+          Value: false
+        frontright_omniwheel:
+          Value: false
+        global_scan:
+          Value: true
+        laser:
+          Value: true
+        left_wheel:
+          Value: false
+        mount_asus_xtion_pro_link:
+          Value: false
+        odom:
+          Value: false
+        platform1:
+          Value: false
+        platform2:
+          Value: false
+        platform3:
+          Value: false
+        platform4:
+          Value: false
+        platform5:
+          Value: false
+        rearleft_omniwheel:
+          Value: false
+        rearright_omniwheel:
+          Value: false
+        right_wheel:
+          Value: false
       Marker Scale: 1
       Name: TF
       Show Arrows: true
       Show Axes: true
       Show Names: true
       Tree:
-        {}
+        odom:
+          base_footprint:
+            base_link:
+              frontleft_omniwheel:
+                {}
+              frontright_omniwheel:
+                {}
+              laser:
+                global_scan:
+                  {}
+              left_wheel:
+                {}
+              platform1:
+                platform2:
+                  camera_platform:
+                    camera_rgb_frame:
+                      camera_depth_frame:
+                        camera_depth_optical_frame:
+                          {}
+                      camera_link:
+                        {}
+                      camera_rgb_optical_frame:
+                        {}
+                    mount_asus_xtion_pro_link:
+                      {}
+                  platform3:
+                    platform4:
+                      platform5:
+                        {}
+              rearleft_omniwheel:
+                {}
+              rearright_omniwheel:
+                {}
+              right_wheel:
+                {}
       Update Interval: 0
-      Value: false
+      Value: true
     - Alpha: 1
       Buffer Length: 1
       Class: rviz/Path
@@ -544,7 +612,7 @@ Visualization Manager:
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
-    Fixed Frame: map
+    Fixed Frame: base_link
     Frame Rate: 30
   Name: root
   Tools:
@@ -562,20 +630,23 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 0
-      Class: rviz/TopDownOrtho
+      Class: rviz/ThirdPersonFollower
+      Distance: 2.15671
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
+      Focal Point:
+        X: 0
+        Y: 0
+        Z: 0
       Name: Current View
       Near Clip Distance: 0.01
-      Scale: 67.8722
+      Pitch: -0.0546019
       Target Frame: <Fixed Frame>
-      Value: TopDownOrtho (rviz)
-      X: 3.69359
-      Y: 9.97702
+      Value: ThirdPersonFollower (rviz)
+      Yaw: 4.88859
     Saved: ~
 Window Geometry:
   Displays:

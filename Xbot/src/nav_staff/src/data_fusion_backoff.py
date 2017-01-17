@@ -86,17 +86,16 @@ class fusion():
         self.laser_data = laser_message
         self.laser_data.ranges = [i for i in laser_message.ranges]
 
-
     def asusCB(self, asus_message):
         self.asus_data = asus_message
         self.asus_data.ranges = [i if i <= self.asus_max_range else numpy.inf for i in asus_message.ranges]
-
 
     def Pub_Data(self, data):
         pub_data = rospy.Publisher(self.scan_topic, LaserScan, queue_size=1)
         pub_data.publish(data)
 
     def PubLaserCB(self, event):
+        self.data_fusion()
         global LaserData
         if len(LaserData) > 0:
             self.data = LaserData.pop()
@@ -104,7 +103,9 @@ class fusion():
         else:
             if self.data != None:
                 self.Pub_Data(self.data)
-
+            else:
+                rospy.loginfo('wait for laser scan')
+                pass
 
     def data_fusion(self):
         if self.asus_data != None and self.laser_data != None:
@@ -137,11 +138,6 @@ class fusion():
             if len(data.ranges) == len(self.laser_data.ranges):
                 global LaserData
                 LaserData.append(data)
-        else:
-            if self.asus_data == None:
-                rospy.loginfo('wait for asus data')
-            if self.laser_data == None:
-                rospy.loginfo('wait for rplidar data')
 
 if __name__ == '__main__':
     rospy.init_node('data_fusion')

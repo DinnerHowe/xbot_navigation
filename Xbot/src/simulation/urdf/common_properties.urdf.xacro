@@ -2,7 +2,17 @@
 <!--
   Various useful properties such as constants and materials 
  -->
+ 
 <robot name="xacro_properties" xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <property name="cam_px" value="0.0" />
+  <property name="cam_py" value="0.0" />
+  <property name="cam_pz" value="0.025" />
+  <property name="cam_or" value="0" />
+  <property name="cam_op" value="0" />
+  <property name="cam_oy" value="0" />
+  <property name="parent" value="camera_platform" />
+  
   <xacro:property name="M_PI" value="3.1415926535897931" /> 
   <xacro:property name="material_white">
     <material name="white">
