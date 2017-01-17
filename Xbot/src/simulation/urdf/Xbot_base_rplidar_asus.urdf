@@ -187,6 +187,7 @@
 
   <link name="camera_platform">
     <visual>
+      <!--<origin rpy="0 0 0" xyz="-0.105 0.025 0.1"/>-->
       <geometry>
         <box size="0 0 0"/>
       </geometry>
@@ -196,7 +197,7 @@
     <axis rpy="0 0 0" xyz="0 0 1"/>
     <parent link="platform2"/>
     <child link="camera_platform"/>
-    <origin rpy="0 0 0" xyz="0.105 0.025 0.1"/>
+    <origin rpy="0 0 0" xyz="0.08 0.0 0.1"/>
   </joint>
 
 
