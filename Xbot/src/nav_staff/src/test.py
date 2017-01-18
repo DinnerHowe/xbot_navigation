@@ -394,12 +394,21 @@ class tester3():
         map_message = rospy.wait_for_message(self.MapTopic, OccupancyGrid)
         self.JPS.get_map(map_message)
 
+#测试路径长度
 class tester4():
     def __init__(self):
+        # rospy.Subscriber('/move_base/NavfnROS/plan', Path, self.planCB)#/move_base/action_plan
         rospy.Subscriber('/move_base/action_plan', Path, self.planCB)
+        rospy.Subscriber('/clicked_point', PointStamped, self.GoalCB)
         rospy.spin()
 
+    def GoalCB(self, goal):
+        self.init_from = rospy.Time.now()
+
     def planCB(self, data):
+        end_at = rospy.Time.now()
+        rospy.loginfo('spend: ' + str(end_at.secs - self.init_from.secs) + 's ' + str(end_at.nsecs - self.init_from.nsecs) + 'ns')
+
         print 'header seq: ',data.header.seq
         print 'length: ', len(data.poses)
 
@@ -487,9 +496,9 @@ if __name__=='__main__':
          #tester()
          # tester2()
          # tester3()
-         #tester4()
+         tester4()
          # tester5()
-         tester6()
+         #tester6()
          # tester7()
          # tester8()
          rospy.loginfo("process done and quit" )

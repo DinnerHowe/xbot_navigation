@@ -80,7 +80,12 @@ class Planner():
         plan.header.seq = self.seq
         self.seq += 1
         plan.header.frame_id = 'map'
+        # start_from_time = rospy.Time.now()
+        # rospy.loginfo('start making plan from: ' + str(start_from_time.secs) + 's' + str(start_from_time.nsecs) + 'ns')
         plan.poses = self.JPS.get_path(end, start)
+        # end_at_time = rospy.Time.now()
+        # rospy.loginfo('plan maked at: ' + str(end_at_time.secs) + 's' + str(end_at_time.nsecs) + 'ns')
+        # rospy.loginfo('spend: ' + str(end_at_time.secs - start_from_time.secs) + 's' + str(end_at_time.nsecs - start_from_time.nsecs) + 'ns')
         return plan
 
     def MapCB(self, map_message):
