@@ -124,8 +124,6 @@ class AMCL():
 
     def apply_pose(self):
         #用来update robot position in map
-        #self.listener.waitForTransform(self.target_frame, self.source_frame, rospy.Time(), rospy.Duration(2))
-
         self.listener.waitForTransform(self.target_frame, self.source_frame, rospy.Time.now(), rospy.Duration(0.01))
         (trans, rot) = self.listener.lookupTransform(self.target_frame, self.source_frame, rospy.Time.now())
 

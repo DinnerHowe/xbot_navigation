@@ -32,13 +32,13 @@
     <arg name="battery" value="$(arg battery)" />
   </include>
     
-  <arg name="scan_topic"        default="/scan" />
+  <!--<arg name="scan_topic"        default="/scan" />-->
   <!--sensor-->
   <include file="$(find machine)/launch/asus_sense.launch">
-   <arg name="rgb_processing" default="false" />
-   <arg name="depth_registration" default="false" />
-   <arg name="depth_processing" default="false" />
-   <arg name="scan_topic" default="$(arg scan_topic)" />
+   <arg name="rgb_processing" default="ture" />
+   <arg name="depth_registration" default="ture" />
+   <arg name="depth_processing" default="ture" />
+   <!--<arg name="scan_topic" default="$(arg scan_topic)" />-->
   </include>
   
 </launch>
