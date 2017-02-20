@@ -35,10 +35,22 @@
   <!--<arg name="scan_topic"        default="/scan" />-->
   <!--sensor-->
   <include file="$(find machine)/launch/asus_sense.launch">
-   <arg name="rgb_processing" default="ture" />
-   <arg name="depth_registration" default="ture" />
-   <arg name="depth_processing" default="ture" />
-   <!--<arg name="scan_topic" default="$(arg scan_topic)" />-->
+    <arg name="camera"                          value="camera"/>
+    <arg name="publish_tf"                      value="false"/>
+
+    <arg name="depth_registration"              value="false"/>
+
+    <arg name="rgb_processing"                  value="true"/>
+    <arg name="ir_processing"                   value="false"/>
+    <arg name="depth_processing"                value="true"/>
+
+    <arg name="depth_registered_processing"     value="false"/>
+    <arg name="disparity_processing"            value="true"/>
+    <arg name="disparity_registered_processing" value="true"/>
+    <arg name="num_worker_threads"              value="4"/>
+
+    <!--<arg name="scan_processing" default= "true"/>-->
+    <!--<arg name="scan_topic" default="$(arg scan_topic)" />-->
   </include>
   
 </launch>
