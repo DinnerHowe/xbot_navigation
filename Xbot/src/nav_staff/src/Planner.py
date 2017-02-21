@@ -27,6 +27,7 @@ from visualization_msgs.msg import Marker
 timer = time.time()
 plans = collections.deque(maxlen=1)
 maps = collections.deque(maxlen=1)
+NO_patch = True
 
 class ClearParams:
     def __init__(self):
@@ -129,7 +130,10 @@ class Planner():
                         return True
             return False
         else:
-            rospy.logwarn('No valid path')
+            global NO_patch
+            if NO_patch:
+                rospy.logwarn('No valid path')
+                NO_patch = False
             return False
 
     def visual_testing(self, data):

@@ -25,8 +25,6 @@
         </node>
     </group>
 
-    <!--<param name="use_sim_time" value="false" />-->
-  
   <!--map saver-->
     <arg name="map_path" default="$(find xbot_cruise)/map/"/>
     <arg name="map_file" default="502.yaml"/>
@@ -54,8 +52,8 @@
     <arg name="initial_orientation_z" default="0.0"/>
     <arg name="initial_orientation_w" default="1.0"/>
 
+    <arg name="AMCL_frequency" default="10"/>
 
-    <arg name="initial_pose_a" default="-1.1489145095412117"/>
     <include file="$(find nav_staff)/launch/xml/amcl_xu_adapted.launch.xml">
         <arg name="initial_position_x"   value="$(arg initial_position_x)"/>
         <arg name="initial_position_y"   value="$(arg initial_position_y)"/>
@@ -66,8 +64,8 @@
         <arg name="initial_orientation_z"   value="$(arg initial_orientation_z)"/>
         <arg name="initial_orientation_w"   value="$(arg initial_orientation_w)"/>
 
+        <arg name="AMCL_frequency"          value="$(arg AMCL_frequency)"/>
 
-        <!--<arg name="amcl_frequency"   value="0.25"/>-->
     </include>
 
     <!--amcl odom-->
@@ -83,4 +81,5 @@
     <!--move base-->
     <include file="$(find nav_staff)/launch/xml/move_base_xu.launch.xml" />
 
+    <node pkg="tf" type="static_transform_publisher" name="map_odom_broadcaster" args="0 0 0 0 0 0 /map /odom 100" />
 </launch>
