@@ -12,5 +12,7 @@
   <xacro:include filename="$(find machine)/urdf/hexagons.urdf.xacro"/>
   <!-- 3D Sensors -->
   <xacro:include filename="$(find machine)/urdf/sensors/asus_xtion_pro.urdf.xacro"/>
-
+  <!-- 2D Sensors -->
+  <xacro:include filename="$(find machine)/urdf/sensors/rplidar.urdf.xacro"/>
+  
 </robot>

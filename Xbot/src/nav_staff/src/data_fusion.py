@@ -13,9 +13,9 @@ This programm is tested on kuboki base turtlebot.
 """
 import rospy
 from sensor_msgs.msg import LaserScan
-import tf
 import numpy
 import collections
+from PlanAlgrithmsLib import Data
 
 LaserData = collections.deque(maxlen=1)
 
@@ -75,7 +75,7 @@ class fusion():
             rospy.set_param('~asus_max_range', 4.0)
         self.asus_max_range = rospy.get_param('~asus_max_range')
 
-        self.period = rospy.Duration(PublishFrequency)
+        self.period = rospy.Duration(1.0/PublishFrequency)
 
         self.laser_data = None
         self.asus_data = None
@@ -93,18 +93,23 @@ class fusion():
 
 
     def Pub_Data(self, data):
-        pub_data = rospy.Publisher(self.scan_topic, LaserScan, queue_size=1)
+        pub_data = rospy.Publisher(self.scan_topic, LaserScan, queue_size=2)
+        data.header.stamp = rospy.Time.now()
+        data.header.frame_id = self.fusion_data_frame
+        data.header.seq = self.seq
+        self.seq += 1
         pub_data.publish(data)
 
     def PubLaserCB(self, event):
-        global LaserData
+        self.data_fusion()
+        # global LaserData
+        # Data.data_fusion(self.asus_data, self.laser_data, LaserData)
         if len(LaserData) > 0:
             self.data = LaserData.pop()
             self.Pub_Data(self.data)
         else:
             if self.data != None:
                 self.Pub_Data(self.data)
-
 
     def data_fusion(self):
         if self.asus_data != None and self.laser_data != None:
@@ -113,7 +118,6 @@ class fusion():
             data.angle_max = self.laser_data.angle_max
             data.header = self.laser_data.header
             data.header.frame_id = self.fusion_data_frame
-            data.header.stamp = rospy.Time.now()
             data.header.seq = self.seq
             self.seq += 1
             data.time_increment = self.laser_data.time_increment
@@ -124,7 +128,7 @@ class fusion():
             data.ranges=[]
             angle = self.laser_data.angle_min
             for i in self.laser_data.ranges:
-                if -0.510632932186 <= angle and angle <= 0.510632932186:
+                if -0.510 <= angle and angle <= 0.510:
                     num = self.asus_data.angle_max
                     for j in self.asus_data.ranges:
                         # print num - angle, num, angle
@@ -144,7 +148,7 @@ class fusion():
                 rospy.loginfo('wait for rplidar data')
 
 if __name__ == '__main__':
-    rospy.init_node('data_fusion')
+    rospy.init_node('Data_fusion')
     try:
         rospy.loginfo("initialization system")
         fusion()

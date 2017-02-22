@@ -68,6 +68,9 @@
     </link>
   </xacro:macro>
 
+
+ 
+
   <xacro:macro name="stack_top_pole" params="parent number x_loc y_loc z_loc">  
     <joint name="pole_top_${number}_joint" type="fixed">
       <origin xyz="${x_loc} ${y_loc} ${z_loc}" rpy="0 0 0"/>
@@ -96,6 +99,73 @@
       </inertial>
     </link>
   </xacro:macro>
+
+
+
+
+  <xacro:macro name="stack_top_pole2" params="parent number x_loc y_loc z_loc">  
+    <joint name="pole_top_${number}_joint2" type="fixed">
+      <origin xyz="${x_loc} ${y_loc} ${z_loc}" rpy="0 0 0"/>
+      <parent link="${parent}"/>
+      <child link="pole_top_${number}_link2"/>
+    </joint>
+    <link name="pole_top_${number}_link2">
+      <visual>
+        <origin xyz=" 0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://machine/meshes/stacks/hexagons/pole_top.dae"/>
+        </geometry>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder length="0.2032" radius="0.006"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <mass value="0.060"/>
+        <origin xyz="0 0 0"/>
+        <inertia ixx="0.000206991" ixy="0.0" ixz="0.0"
+                 iyy="0.000206991" iyz="0.0"
+                 izz="0.000001080"/>
+      </inertial>
+    </link>
+  </xacro:macro>
+
+
+
+
+  <xacro:macro name="stack_top_pole3" params="parent number x_loc y_loc z_loc">  
+    <joint name="pole_top_${number}_joint3" type="fixed">
+      <origin xyz="${x_loc} ${y_loc} ${z_loc}" rpy="0 0 0"/>
+      <parent link="${parent}"/>
+      <child link="pole_top_${number}_link3"/>
+    </joint>
+    <link name="pole_top_${number}_link3">
+      <visual>
+        <origin xyz=" 0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://machine/meshes/stacks/hexagons/pole_top.dae"/>
+        </geometry>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder length="0.2032" radius="0.006"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <mass value="0.060"/>
+        <origin xyz="0 0 0"/>
+        <inertia ixx="0.000206991" ixy="0.0" ixz="0.0"
+                 iyy="0.000206991" iyz="0.0"
+                 izz="0.000001080"/>
+      </inertial>
+    </link>
+  </xacro:macro>
+
+
+
 
   <xacro:macro name="stack_3d_sensor_pole" params="parent number x_loc y_loc z_loc">
     <joint name="pole_kinect_${number}_joint" type="fixed">
@@ -202,8 +272,8 @@
     <stack_top_pole parent="${parent}" number="1" x_loc= "0.0381" y_loc="-0.1505" z_loc="0.2920"/>
     <stack_top_pole parent="${parent}" number="2" x_loc="-0.0381" y_loc= "0.1505" z_loc="0.2920"/>
     <stack_top_pole parent="${parent}" number="3" x_loc="-0.0381" y_loc="-0.1505" z_loc="0.2920"/>
-    <stack_3d_sensor_pole parent="${parent}" number="0" x_loc="-0.1024" y_loc= "0.098" z_loc="0.2372"/>
-    <stack_3d_sensor_pole parent="${parent}" number="1" x_loc="-0.1024" y_loc="-0.098" z_loc="0.2372"/>
+    <stack_3d_sensor_pole parent="${parent}" number="0" x_loc="0.1024" y_loc= "0.098" z_loc="0.8172"/>
+    <stack_3d_sensor_pole parent="${parent}" number="1" x_loc="0.1024" y_loc="-0.098" z_loc="0.8172"/>
     
     <joint name="plate_top_joint" type="fixed">
       <origin xyz="-0.01364 0.0  0.3966" rpy="0 0 0"/>
@@ -231,5 +301,74 @@
                  izz="0.006656" />
       </inertial>
     </link>
+
+
+    <stack_top_pole2 parent="${parent}" number="0" x_loc= "0.0381" y_loc= "0.1505" z_loc="0.5000"/>
+    <stack_top_pole2 parent="${parent}" number="1" x_loc= "0.0381" y_loc="-0.1505" z_loc="0.5000"/>
+    <stack_top_pole2 parent="${parent}" number="2" x_loc="-0.0381" y_loc= "0.1505" z_loc="0.5000"/>
+    <stack_top_pole2 parent="${parent}" number="3" x_loc="-0.0381" y_loc="-0.1505" z_loc="0.5000"/>
+    
+    <joint name="plate_top_joint2" type="fixed">
+      <origin xyz="-0.01364 0.0 0.6074" rpy="0 0 0"/>
+      <parent link="${parent}"/>
+      <child link="plate_top_link2"/>
+    </joint>  
+    <link name="plate_top_link2">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://machine/meshes/stacks/hexagons/plate_top.dae"/>
+        </geometry>
+      </visual>  
+      <collision>
+        <origin xyz="0.01364 0.0 0.0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder length="0.006" radius="0.170"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <mass value="0.520" />
+        <origin xyz="0 0 0" />
+        <inertia ixx="0.003328" ixy="0.0" ixz="0.0"
+                 iyy="0.003328" iyz="0.0"
+                 izz="0.006656" />
+      </inertial>  
+    </link>
+
+
+
+    <stack_top_pole3 parent="${parent}" number="0" x_loc= "0.0381" y_loc= "0.1505" z_loc="0.6600"/>
+    <stack_top_pole3 parent="${parent}" number="1" x_loc= "0.0381" y_loc="-0.1505" z_loc="0.6600"/>
+    <stack_top_pole3 parent="${parent}" number="2" x_loc="-0.0381" y_loc= "0.1505" z_loc="0.6600"/>
+    <stack_top_pole3 parent="${parent}" number="3" x_loc="-0.0381" y_loc="-0.1505" z_loc="0.6600"/>
+    
+    <joint name="plate_top_joint3" type="fixed">
+      <origin xyz="-0.01364 0.0 0.7674" rpy="0 0 0"/>
+      <parent link="${parent}"/>
+      <child link="plate_top_link3"/>
+    </joint>  
+    <link name="plate_top_link3">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://machine/meshes/stacks/hexagons/plate_top.dae"/>
+        </geometry>
+      </visual>  
+      <collision>
+        <origin xyz="0.01364 0.0 0.0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder length="0.006" radius="0.170"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <mass value="0.520" />
+        <origin xyz="0 0 0" />
+        <inertia ixx="0.003328" ixy="0.0" ixz="0.0"
+                 iyy="0.003328" iyz="0.0"
+                 izz="0.006656" />
+      </inertial>  
+    </link>
+
+
   </xacro:macro>
 </robot>
