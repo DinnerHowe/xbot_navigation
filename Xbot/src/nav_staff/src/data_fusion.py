@@ -101,9 +101,9 @@ class fusion():
         pub_data.publish(data)
 
     def PubLaserCB(self, event):
-        self.data_fusion()
-        # global LaserData
-        # Data.data_fusion(self.asus_data, self.laser_data, LaserData)
+        # self.data_fusion()
+        global LaserData
+        Data.data_fusion(self.asus_data, self.laser_data, LaserData)
         if len(LaserData) > 0:
             self.data = LaserData.pop()
             self.Pub_Data(self.data)
@@ -111,41 +111,41 @@ class fusion():
             if self.data != None:
                 self.Pub_Data(self.data)
 
-    def data_fusion(self):
-        if self.asus_data != None and self.laser_data != None:
-            data = LaserScan()
-            data.angle_min = self.laser_data.angle_min
-            data.angle_max = self.laser_data.angle_max
-            data.header = self.laser_data.header
-            data.header.frame_id = self.fusion_data_frame
-            data.header.seq = self.seq
-            self.seq += 1
-            data.time_increment = self.laser_data.time_increment
-            data.angle_increment = self.laser_data.angle_increment
-            data.scan_time = self.laser_data.scan_time
-            data.range_min = self.laser_data.range_min
-            data.range_max = self.laser_data.range_max
-            data.ranges=[]
-            angle = self.laser_data.angle_min
-            for i in self.laser_data.ranges:
-                if -0.510 <= angle and angle <= 0.510:
-                    num = self.asus_data.angle_max
-                    for j in self.asus_data.ranges:
-                        # print num - angle, num, angle
-                        if abs(num - angle) <= self.asus_data.angle_increment:
-                            if i > j:
-                                i = j
-                        num -= self.asus_data.angle_increment
-                data.ranges.append(i)
-                angle -= self.laser_data.angle_increment
-            if len(data.ranges) == len(self.laser_data.ranges):
-                global LaserData
-                LaserData.append(data)
-        else:
-            if self.asus_data == None:
-                rospy.loginfo('wait for asus data')
-            if self.laser_data == None:
-                rospy.loginfo('wait for rplidar data')
+    # def data_fusion(self):
+    #     if self.asus_data != None and self.laser_data != None:
+    #         data = LaserScan()
+    #         data.angle_min = self.laser_data.angle_min
+    #         data.angle_max = self.laser_data.angle_max
+    #         data.header = self.laser_data.header
+    #         data.header.frame_id = self.fusion_data_frame
+    #         data.header.seq = self.seq
+    #         self.seq += 1
+    #         data.time_increment = self.laser_data.time_increment
+    #         data.angle_increment = self.laser_data.angle_increment
+    #         data.scan_time = self.laser_data.scan_time
+    #         data.range_min = self.laser_data.range_min
+    #         data.range_max = self.laser_data.range_max
+    #         data.ranges=[]
+    #         angle = self.laser_data.angle_min
+    #         for i in self.laser_data.ranges:
+    #             if -0.510 <= angle and angle <= 0.510:
+    #                 num = self.asus_data.angle_max
+    #                 for j in self.asus_data.ranges:
+    #                     # print num - angle, num, angle
+    #                     if abs(num - angle) <= self.asus_data.angle_increment:
+    #                         if i > j:
+    #                             i = j
+    #                     num -= self.asus_data.angle_increment
+    #             data.ranges.append(i)
+    #             angle -= self.laser_data.angle_increment
+    #         if len(data.ranges) == len(self.laser_data.ranges):
+    #             global LaserData
+    #             LaserData.append(data)
+    #     else:
+    #         if self.asus_data == None:
+    #             rospy.loginfo('wait for asus data')
+    #         if self.laser_data == None:
+    #             rospy.loginfo('wait for rplidar data')
 
 if __name__ == '__main__':
     rospy.init_node('Data_fusion')

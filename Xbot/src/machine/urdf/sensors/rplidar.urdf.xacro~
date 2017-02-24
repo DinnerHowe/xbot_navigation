@@ -7,7 +7,13 @@
   
   <!-- RPLidar 2D LIDAR -->
   <xacro:macro name="sensor_rplidar" params="parent">
-    <link name="laser">
+    <joint name="laser" type="fixed">
+      <origin xyz="0.12 0.0 0.15" rpy="0 0.0 0.0" />
+      <parent link="base_link" />
+      <child link="base_laser_link" />
+    </joint>
+
+    <link name="base_laser_link">
       <visual>
         <geometry>
           <cylinder length="0.045" radius="0.045" />
@@ -21,19 +27,12 @@
           iyy="0.0001" iyz="0.0" izz="0.0001" />
       </inertial>
     </link>
-    <joint name="base_laser_link" type="fixed">
-      <origin xyz="0.12 0.0 0.15" rpy="0.0 0.0 0.0" />
-      <parent link="${parent}" />
-      <child link="laser" />
-    </joint>
-
     <!-- Set up laser gazebo details -->
-    <link name="global_scan"/>
+    <link name="global_scan">
+    </link>
     <joint name="base_link_to_global_scan" type="fixed">
-      <!--<origin xyz="0.0 0.0 0.2" rpy="0 0.0 0.0" />-->
-      <origin xyz="0.12 0.0 0.35" rpy="0 0.0 0.0" />
-      <!--<parent link="base_link" />-->
-      <parent link="laser" />
+      <origin xyz="0.13 0.0 0.35" rpy="0 0.0 0.0" />
+      <parent link="base_link" />
       <child link="global_scan" />
     </joint>
 
