@@ -3,7 +3,7 @@
 """
 test plan 算法库的测试程序
 
-Copyright (c) 2016 Xu Zhihao (Howe).  All rights reserved.
+Copyright (c) 2017 Xu Zhihao (Howe).  All rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 
@@ -27,7 +27,7 @@ import collections
 from geometry_msgs.msg import Twist
 
 from xbot_msgs.msg import DockInfraRed
-
+from std_msgs.msg import String
 
 init = True
 
@@ -489,6 +489,39 @@ class tester8():
     def timer(self, event):
         self.status = raw_input('input status')
 
+#path switch
+class tester9():
+    def __init__(self):
+        self.define()
+        rospy.Subscriber(self.PlanTopic1, String, self.PlanCB1)
+        rospy.Subscriber(self.PlanTopic2, String, self.PlanCB2)
+        rospy.Subscriber(self.SwitchModleTopic, String, self.SwitchCB)
+        rospy.spin()
+
+    def define(self):
+        # parameters
+        self.SwitchModleTopic = 'test/switch'
+        self.PlanTopic1 = 'test/1'
+        self.PlanTopic2 = 'test/2'
+        self.switch = False
+
+    def PlanCB1(self, string):
+        if not self.switch:
+            print string.data
+
+    def PlanCB2(self, string):
+        if self.switch:
+            print string.data
+
+    def SwitchCB(self, string):
+        if string.data == '1':
+            print 'switch to 1'
+            self.switch = False
+        elif string.data == '2':
+            print 'switch to 2'
+            # self.PlanTopic = 'test/2'
+            self.switch = True
+
 if __name__=='__main__':
      rospy.init_node('Plan_tester')
      try:
@@ -496,11 +529,12 @@ if __name__=='__main__':
          #tester()
          # tester2()
          # tester3()
-         tester4()
+         # tester4()
          # tester5()
          #tester6()
          # tester7()
          # tester8()
+         tester9()
          rospy.loginfo("process done and quit" )
      except rospy.ROSInterruptException:
          rospy.loginfo("node terminated.")

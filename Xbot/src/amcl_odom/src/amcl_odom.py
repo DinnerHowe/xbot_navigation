@@ -38,13 +38,16 @@ class AMCL_Odom_Trigger:
 
 
     def tf_handle(self, tf_msg):
-        frame_id = tf_msg.transforms[0].header.frame_id
-        if frame_id == 'map':
-            self.launcher()
+        if len(tf_msg.transforms) > 0:
+            frame_id = tf_msg.transforms[0].header.frame_id
+            if frame_id == 'map':
+                self.launcher()
+            else:
+                global ClockLocker
+                if ClockLocker:
+                    rospy.logwarn('No map frame')
         else:
-            global ClockLocker
-            if ClockLocker:
-                rospy.logwarn('No map frame')
+            rospy.logwarn('No tf recieved' + str(len(tf_msg.transforms)))
 
     def launcher(self):
         # self.listener.waitForTransform(self.target_frame, self.source_frame, rospy.Time(), rospy.Duration(2))

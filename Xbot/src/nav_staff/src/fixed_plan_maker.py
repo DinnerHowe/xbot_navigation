@@ -40,7 +40,6 @@ class ClearParams:
 class fixed():
     def __init__(self):
         self.define()
-        # rospy.Subscriber(self.PlanTopic, Path, self.PlanCB)
         rospy.Subscriber(self.GoalTopic, PointStamped, self.GoalCB)
         rospy.Timer(self.period, self.PubPlanCB)
         rospy.Timer(self.period, self.FinshCB)
@@ -74,6 +73,9 @@ class fixed():
             rospy.set_param('~PathStorePath', file)
         self.file = rospy.get_param('~PathStorePath')
 
+        if not rospy.has_param('~times'):
+            rospy.set_param('~times', 2)
+        self.times = rospy.get_param('~times')
 
         self.period = rospy.Duration(PublishFrequency)
         self.JPS = AlgrithmsLib.JPS()
@@ -171,7 +173,7 @@ class fixed():
         self.seq += 1
         PubPlan.header.stamp = rospy.Time.now()
         PubPlan.header.frame_id = 'map'
-        PubPlan.poses = data
+        PubPlan.poses = data * self.times
         if data != []:
             pub = rospy.Publisher(Topic, Path, queue_size=1)
             pub.publish(PubPlan)

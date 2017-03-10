@@ -23,13 +23,18 @@ from geometry_msgs.msg import Point
 from visualization_msgs.msg import Marker
 from threading import Lock
 from geometry_msgs.msg import Quaternion
+from std_msgs.msg import String
 
 Tasks = list()
 cmd_queue = collections.deque(maxlen=1)
+switcher = False
 
 class ClearParams:
     def __init__(self):
-        rospy.delete_param('~PlanTopic')
+        rospy.delete_param('~SwitchModleTopic')
+        rospy.delete_param('~PlanTopicFixed')
+        rospy.delete_param('~PlanTopicOnce')
+
         rospy.delete_param('~OdomTopic')
         rospy.delete_param('~MotionTopice')
 
@@ -49,15 +54,25 @@ class BaseController:
     def __init__(self):
         self.define()
         rospy.Subscriber(self.OdomTopic, PoseStamped, self.OdomCB)
-        rospy.Subscriber(self.PlanTopic, Path, self.PlanCB)
+        rospy.Subscriber(self.PlanTopicFixed, Path, self.PlanFixedCB)
+        rospy.Subscriber(self.PlanTopicOnce, Path, self.PlanOnceCB)
+        rospy.Subscriber(self.SwitchModleTopic, String, self.SwitchCB)
         rospy.Timer(self.period, self.PubcmdCB)
         rospy.spin()
 
     def define(self):
         # parameters
-        if not rospy.has_param('~PlanTopic'):
-            rospy.set_param('~PlanTopic', '/move_base/action_plan')
-        self.PlanTopic = rospy.get_param('~PlanTopic')
+        if not rospy.has_param('~SwitchModleTopic'):
+            rospy.set_param('~SwitchModleTopic', '/move_base/switch')
+        self.SwitchModleTopic = rospy.get_param('~SwitchModleTopic')
+
+        if not rospy.has_param('~PlanTopicFixed'):
+            rospy.set_param('~PlanTopicFixed', '/move_base/action_plan/fixed"')
+        self.PlanTopicFixed = rospy.get_param('~PlanTopicFixed')
+
+        if not rospy.has_param('~PlanTopicOnce'):
+            rospy.set_param('~PlanTopicOnce', '/move_base/action_plan/once')
+        self.PlanTopicOnce = rospy.get_param('~PlanTopicOnce')
 
         if not rospy.has_param('~OdomTopic'):
             rospy.set_param('~OdomTopic', '/robot_position_in_map')
@@ -112,6 +127,13 @@ class BaseController:
         self.locker = Lock()
 
         self.cmd_vel = Twist()
+
+    def SwitchCB(self, signal):
+        global switcher
+        if signal.data == 'FixedModule':
+            switcher = False
+        elif signal.data == 'OnePathModule':
+            switcher = True
 
     def OdomCB(self, odom):
         global Tasks
@@ -170,7 +192,7 @@ class BaseController:
         if angle_cmd < -numpy.pi:
             angle_cmd = numpy.pi * 2 + angle_cmd
         # print angle_cmd, round(goal_angle - cur_angle, 3)
-        cmd_vector.angular.z = angle_cmd
+        cmd_vector.angular.z = round(angle_cmd, 3)
         cmd_vector.linear.x = round(goal_linear, 3)
         global cmd_queue
         cmd_queue.append(cmd_vector)
@@ -211,8 +233,20 @@ class BaseController:
     def acc_speed(self):
         pass
 
-    def PlanCB(self, PlanPath):
-        with self.locker:
+    def PlanFixedCB(self, PlanPath):
+        # with self.locker:
+        global switcher
+        if not switcher:
+            self.path = []
+            self.path = PlanPath.poses
+            global Tasks
+            segment = [i.pose.position for i in self.path]
+            if len(segment) >= 2:
+                Tasks = self.linear_analyse(segment)
+
+    def PlanOnceCB(self, PlanPath):
+        global switcher
+        if switcher:
             self.path = []
             self.path = PlanPath.poses
             global Tasks
@@ -265,7 +299,6 @@ class BaseController:
                     rospy.logerr('both linear and angular input is zero!')
                 cmd_pub.publish(cmd)
 
-
     def linear_analyse(self, points):
         nodes = CVlib.Linear_analyse(points)
         if self.visual_test:
@@ -282,11 +315,11 @@ class BaseController:
             pub.publish(result)
         return nodes
 
-if __name__ == '__main__':
-    rospy.init_node('BaseController_X')
-    try:
-        rospy.loginfo("initialization system")
-        BaseController()
-        ClearParams()
-    except rospy.ROSInterruptException:
-        rospy.loginfo("node terminated.")
+# if __name__ == '__main__':
+#     rospy.init_node('BaseController_X')
+#     try:
+#         rospy.loginfo("initialization system")
+#         BaseController()
+#         ClearParams()
+#     except rospy.ROSInterruptException:
+#         rospy.loginfo("node terminated.")
