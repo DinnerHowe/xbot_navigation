@@ -124,7 +124,7 @@ class fixed():
         global use_exit_path
         if use_exit_path:
             if self.seq <= 100:
-                self.publish_data(self.PlanTopic, self.path)
+                self.publish_data(self.PlanTopic, self.path * self.times)
 
     def GoalCB(self, goal):
         global Finish
@@ -167,9 +167,9 @@ class fixed():
                     self.publish_data(self.PlanTopic_view, self.path)
             else:
                 if Finish:
-                    if self.seq <= 100:
-                        self.publish_data(self.PlanTopic, self.path)
-
+                    # if self.seq <= 100:
+                    #     self.publish_data(self.PlanTopic, self.path)
+                    pass
                 else:
                 # if not Finish:
                     self.publish_data(self.PlanTopic_view, self.path)
@@ -181,7 +181,7 @@ class fixed():
         PubPlan.header.stamp = rospy.Time.now()
         PubPlan.header.frame_id = 'map'
         PubPlan.poses = data
-        PubPlan.poses *= self.times
+        # PubPlan.poses *= self.times
         if data != []:
             pub = rospy.Publisher(Topic, Path, queue_size=1)
             pub.publish(PubPlan)
