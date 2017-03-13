@@ -62,10 +62,10 @@ class Planner():
     def MakePlan(self, data):
         # time1 = time.time()
         rospy.loginfo('get a new goal')
-        self.goal = data
-        end = self.goal.point
-        start = self.odom.pose.position
         if self.odom != None:
+            self.goal = data
+            end = self.goal.point
+            start = self.odom.pose.position
             plan = self.Generate_plan(end, start)
             # rospy.loginfo('generating a path')
             if plan.poses != None:
@@ -159,22 +159,11 @@ class Planner():
                 self.PubPlan.header.stamp = rospy.Time.now()
                 self.PubPlan.header.seq = self.seq
                 self.seq += 1
-                pub = rospy.Publisher(self.PlanTopic, Path, queue_size=2)
-                # self.PubPlan.poses = self.PubPlan.poses[:20]
+                pub = rospy.Publisher(self.PlanTopic, Path, queue_size=1)
                 pub.publish(self.PubPlan)
                 rospy.loginfo('publshing a new plan')
             else:
                 pass
-                # if self.PubPlan.poses != []:
-                #     # rospy.loginfo('update plan')
-                #     pub = rospy.Publisher(self.PlanTopic, Path, queue_size=2)
-                #     self.PubPlan.header.stamp = rospy.Time.now()
-                #     self.PubPlan.header.seq = self.seq
-                #     self.seq += 1
-                #     pub.publish(self.PubPlan)
-                #     # rospy.loginfo('publshing a old plan')
-
-                    # print self.PubPlan
 
     def define(self):
         if not rospy.has_param('~GoalTopic'):
@@ -197,10 +186,6 @@ class Planner():
              rospy.set_param('~OdomTopic', '/robot_position_in_map')
         self.OdomTopic = rospy.get_param('~OdomTopic')
 
-        # if not rospy.has_param('~oscillation_distance'):
-        #      rospy.set_param('~oscillation_distance', 0.0)
-        # self.OscillationDistance = rospy.get_param('~oscillation_distance')
-
         if not rospy.has_param('~visual_debug'):
              rospy.set_param('~visual_debug', True)
         self.visual_debug = rospy.get_param('~visual_debug')
@@ -216,9 +201,6 @@ class Planner():
         self.JPS = AlgrithmsLib.JPS()
         self.odom = None
         self.seq = 0
-
-        # map_message = rospy.wait_for_message(self.MapTopic, OccupancyGrid)
-        # self.JPS.get_map(map_message)
 
 if __name__=='__main__':
      rospy.init_node('Planner')

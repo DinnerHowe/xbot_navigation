@@ -29,8 +29,12 @@ from geometry_msgs.msg import Twist
 from xbot_msgs.msg import DockInfraRed
 from std_msgs.msg import String
 
+from tf2_msgs.msg import TFMessage
+
+
 init = True
 
+#地图投影
 class tester():
     def __init__(self):
         self.define()
@@ -130,6 +134,7 @@ class tester():
 
         return map
 
+#地图投影
 class tester2():
     def __init__(self):
         self.define()
@@ -412,6 +417,7 @@ class tester4():
         print 'header seq: ',data.header.seq
         print 'length: ', len(data.poses)
 
+#输出鼠标选着点在地图上的位置
 class tester5():
     def __init__(self):
         rospy.Subscriber('/clicked_point', PointStamped, self.PointCB)
@@ -425,6 +431,7 @@ class tester5():
     def MapCB(self, map):
         self.map = map
 
+#输出机器朝向&&直线判断
 class tester6():
     def __init__(self):
         rospy.Subscriber('/robot_position_in_map', PoseStamped, self.odomCB)
@@ -445,6 +452,7 @@ class tester6():
         Diff_y = round(node.y - self.odom.position.y, 2)
         # print
 
+#cmd 对比前一命令
 class tester7():
     def __init__(self):
         self.define()
@@ -462,6 +470,7 @@ class tester7():
             self.pre_cmd = cmd
             print self.pre_cmd
 
+#声呐报警
 class tester8():
     def __init__(self):
         self.define()
@@ -522,6 +531,36 @@ class tester9():
             # self.PlanTopic = 'test/2'
             self.switch = True
 
+#tf 消息订阅
+class tester10():
+    def __init__(self):
+        rospy.Subscriber('tf', TFMessage, self.tf_monitor)
+        rospy.spin()
+
+    def tf_monitor(self, data):
+        print len(data.transforms), ': ', [i.header.frame_id for i in data.transforms]
+#订阅/move_base/action_plan/fixed
+class tester10():
+    def __init__(self):
+        rospy.Subscriber('/move_base/action_plan/fixed', Path, self.path_monitor)
+        rospy.spin()
+
+    def path_monitor(self, path):
+        data= path.poses
+        new = []
+        renew =[]
+        for i in data:
+            if i not in new:
+                new.append((i.pose.position.x, i.pose.position.y))
+            else:
+                renew.append((i.pose.position.x, i.pose.position.y))
+        result1 = []
+        for i in new:
+            if i not in renew:
+                result1.append(i)
+        print '1: ', result1
+
+
 if __name__=='__main__':
      rospy.init_node('Plan_tester')
      try:
@@ -534,7 +573,8 @@ if __name__=='__main__':
          #tester6()
          # tester7()
          # tester8()
-         tester9()
+         # tester9()
+         tester10()
          rospy.loginfo("process done and quit" )
      except rospy.ROSInterruptException:
          rospy.loginfo("node terminated.")

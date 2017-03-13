@@ -14,75 +14,72 @@ from geometry_msgs.msg import  PoseStamped
 import tf
 
 
-ClockLocker = False
+ClockLocker = True
+ClockRLocker  = True
 
 class ClearParams:
     def __init__(self):
         rospy.delete_param('~target_frame')
         rospy.delete_param('~source_frame')
+        rospy.delete_param('~amclodom_frequence')
 
 class AMCL_Odom_Trigger:
     def __init__(self):
         self.define()
         rospy.Subscriber('tf', TFMessage, self.tf_handle)
-        rospy.Timer(rospy.Duration(10), self.ClockCB)
+        rospy.Timer(rospy.Duration(5), self.ClockCB)
+        rospy.Timer(rospy.Duration(self.frequency), self.launcher)
         rospy.spin()
 
-    def ClockCB(self):
+    def ClockCB(self, event):
         global ClockLocker
-        if not ClockLocker:
+        if not ClockLocker and ClockRLocker:
             ClockLocker = True
-        else:
-            ClockLocker = False
-        rospy.logwarn(' ClockLocker: ' + ClockLocker)
-
 
     def tf_handle(self, tf_msg):
+        global ClockLocker
+        global ClockRLocker
         if len(tf_msg.transforms) > 0:
-            frame_id = tf_msg.transforms[0].header.frame_id
-            if frame_id == 'map':
-                self.launcher()
+            frame_id = [i.header.frame_id for i in tf_msg.transforms]
+            if '/map' in frame_id or 'map' in frame_id:
+                if ClockRLocker:
+                    rospy.loginfo('amcl_odom: Detect map frame')
+                    ClockRLocker = False
             else:
-                global ClockLocker
                 if ClockLocker:
-                    rospy.logwarn('No map frame')
-        else:
-            rospy.logwarn('No tf recieved' + str(len(tf_msg.transforms)))
+                    ClockLocker = False
+                    rospy.logwarn('amcl_odom: Lose map frame')
 
-    def launcher(self):
-        # self.listener.waitForTransform(self.target_frame, self.source_frame, rospy.Time(), rospy.Duration(2))
-        try:
-            now = rospy.Time.now()
-            self.listener.waitForTransform(self.target_frame, self.source_frame, now, rospy.Duration(0.01))
-            (trans, rot) = self.listener.lookupTransform(self.target_frame, self.source_frame, now)
-            self.pub_data(trans, rot)
-        except:
-            pass
-
+    def launcher(self, event):
+        if not ClockRLocker:
+            try:
+                now = rospy.Time.now()
+                self.listener.waitForTransform(self.target_frame, self.source_frame, now, rospy.Duration(0.001))
+                (trans, rot) = self.listener.lookupTransform(self.target_frame, self.source_frame, now)
+                self.pub_data(trans, rot)
+            except:
+                try:
+                    self.listener.waitForTransform(self.target_frame, self.source_frame, rospy.Time(), rospy.Duration(1))
+                except:
+                    pass
 
     def pub_data(self, trans, rot):
         pose = Pose()
         odom = PoseStamped()
-
         (px, py, pz) = trans
         (qx, qy, qz, qw) = rot
-
         pose.position.x = px
         pose.position.y = py
         pose.position.z = pz
-
         pose.orientation.x = qx
         pose.orientation.y = qy
         pose.orientation.z = qz
         pose.orientation.w = qw
-
         odom.pose = pose
         odom.header.stamp = rospy.Time.now()
-        odom.header.frame_id = "map"
-
+        odom.header.frame_id = "/map"
         odom_pub = rospy.Publisher(self.use_odom_topic, PoseStamped, queue_size=1)
         odom_pub.publish(odom)
-
 
     def define(self):
         if not rospy.has_param("~use_odom_topic"):
@@ -96,6 +93,10 @@ class AMCL_Odom_Trigger:
         if not rospy.has_param("~source_frame"):
             rospy.set_param("~source_frame", "/base_footprint")
         self.source_frame = rospy.get_param("~source_frame")
+
+        if not rospy.has_param("~amclodom_frequence"):
+            rospy.set_param("~amclodom_frequence", 0.1)
+        self.frequency = rospy.get_param("~amclodom_frequence")
 
         self.listener = tf.TransformListener()
 
