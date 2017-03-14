@@ -25,7 +25,7 @@
     <arg name="FixedPlanTopic"          default="/move_base/action_plan/fixed"/>
     <arg name="OncePlanTopic"           default="/move_base/action_plan"/>
     <arg name="SwitchModleTopic"        default="/move_base/switch" />
-
+    <arg name="times"                   default= '2' />
 
     <arg if="$(arg fixed_path)" name="MovebasePlanTopic" value="$(arg FixedPlanTopic)" />
     <arg unless="$(arg fixed_path)" name="MovebasePlanTopic" value="$(arg PlanTopic)" />
@@ -50,6 +50,7 @@
         <param name="GoalTolerant"      value="$(arg GoalTolerant)" />
 
         <param name="visual_test"       value="$(arg visual_test)" />
+        <param name="times"             value="$(arg times)" />
     </node>
 
     <arg name="CmdTopice"               value='cmd_vel_mux/input/navi' />

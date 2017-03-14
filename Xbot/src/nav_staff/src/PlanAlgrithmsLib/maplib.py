@@ -62,8 +62,7 @@ def visual_test(data, Type, color, scale, duration = 1):  # data=[point1,point2,
         point_marker.scale.y = scale.y  # 0.1
 
         point_marker.points = data
-        for i in data:
-            point_marker.colors.append(color)
+        [point_marker.colors.append(color) for i in data]
         point_marker.lifetime = rospy.Duration(duration)
         return point_marker
 

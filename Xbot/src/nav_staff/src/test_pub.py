@@ -26,7 +26,7 @@ class tester9():
         pub2.publish('2')
 
     def switchCB(self, event):
-        switcher = rospy.Publisher('test/switch', String, queue_size=1)
+        switcher = rospy.Publisher('/move_base/switch', String, queue_size=1)
         string = raw_input(':')
         switcher.publish(string)
 

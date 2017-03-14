@@ -16,6 +16,9 @@ from PlanAlgrithmsLib import CVlib
 from PlanAlgrithmsLib import maplib
 from geometry_msgs.msg import PointStamped
 from geometry_msgs.msg import PoseStamped
+from visualization_msgs.msg import Marker
+from std_msgs.msg import ColorRGBA
+from geometry_msgs.msg import Point
 
 from nav_msgs.msg import Path
 from nav_msgs.msg import OccupancyGrid
@@ -539,9 +542,11 @@ class tester10():
 
     def tf_monitor(self, data):
         print len(data.transforms), ': ', [i.header.frame_id for i in data.transforms]
+
 #订阅/move_base/action_plan/fixed
-class tester10():
+class tester11():
     def __init__(self):
+        self.printer = False
         rospy.Subscriber('/move_base/action_plan/fixed', Path, self.path_monitor)
         rospy.spin()
 
@@ -549,16 +554,52 @@ class tester10():
         data= path.poses
         new = []
         renew =[]
-        for i in data:
-            if i not in new:
-                new.append((i.pose.position.x, i.pose.position.y))
+        test = []
+        for i in range(2):
+            test.append(data[i])
+
+        if self.printer:
+            print '\n\n'
+            for i in test*2:
+                print i
+        self.printer = False
+
+        for i in range(len(data)):
+            if i < len(data)/2:
+                new.append(data[i].pose.position)
             else:
-                renew.append((i.pose.position.x, i.pose.position.y))
-        result1 = []
-        for i in new:
-            if i not in renew:
-                result1.append(i)
-        print '1: ', result1
+                data[i].pose.position.z = 1.0
+                renew.append(data[i].pose.position)
+        print 'new: ', len(new), 'renew: ', len(renew)
+
+        while new != []:
+            for i in new:
+                for j in renew:
+                    if round(i.x-j.x, 3) == 0.0 and round(i.y-j.y, 3) == 0.0:
+                        renew.remove(j)
+                        new.remove(i)
+                        continue
+        # print '111: ', new[0].x - renew[0].x == 0.0, new[0].y - renew[0].y == 0.0
+
+
+        color = ColorRGBA()
+        scale = Point()
+        scale.x = 0.05
+        scale.y = 0.05
+        color.g = 1.0
+        color.a = 1.0
+        result_renew = maplib.visual_test(renew, Marker.POINTS, color, scale, 0)
+        color.g = 0.0
+        color.r = 1.0
+        result_new = maplib.visual_test(new, Marker.POINTS, color, scale, 0)
+
+        pub_renew = rospy.Publisher('/tester_renew', Marker, queue_size=1)
+        pub_new = rospy.Publisher('/tester_new', Marker, queue_size=1)
+
+        pub_renew.publish(result_renew)
+        pub_new.publish(result_new)
+
+        print 'result_new: ', len(result_new.points), 'result_renew: ', len(result_renew.points)
 
 
 if __name__=='__main__':
@@ -574,7 +615,8 @@ if __name__=='__main__':
          # tester7()
          # tester8()
          # tester9()
-         tester10()
+         # tester10()
+         tester11()
          rospy.loginfo("process done and quit" )
      except rospy.ROSInterruptException:
          rospy.loginfo("node terminated.")

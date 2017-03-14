@@ -67,7 +67,7 @@ class BaseController:
         self.SwitchModleTopic = rospy.get_param('~SwitchModleTopic')
 
         if not rospy.has_param('~PlanTopicFixed'):
-            rospy.set_param('~PlanTopicFixed', '/move_base/action_plan/fixed"')
+            rospy.set_param('~PlanTopicFixed', '/move_base/action_plan/fixed')
         self.PlanTopicFixed = rospy.get_param('~PlanTopicFixed')
 
         if not rospy.has_param('~PlanTopicOnce'):
@@ -120,6 +120,10 @@ class BaseController:
          rospy.set_param('~visual_test', True)
         self.visual_test = rospy.get_param('~visual_test')
 
+        if not rospy.has_param('~times'):
+            rospy.set_param('~times', 2)
+        self.times = rospy.get_param('~times')
+
         self.path = []
 
         self.period = rospy.Duration(self.PublishFrequency)
@@ -131,8 +135,10 @@ class BaseController:
     def SwitchCB(self, signal):
         global switcher
         if signal.data == 'FixedModule':
+            rospy.logwarn('Switch to FixedModule')
             switcher = False
         elif signal.data == 'OnePathModule':
+            rospy.logwarn('Switch to OnePathModule')
             switcher = True
 
     def OdomCB(self, odom):
@@ -234,15 +240,17 @@ class BaseController:
         pass
 
     def PlanFixedCB(self, PlanPath):
-        # with self.locker:
         global switcher
         if not switcher:
             self.path = []
             self.path = PlanPath.poses
             global Tasks
+            Tasks = list()
             segment = [i.pose.position for i in self.path]
             if len(segment) >= 2:
                 Tasks = self.linear_analyse(segment)
+                Tasks = Tasks * self.times
+                self.visualise(Tasks)
 
     def PlanOnceCB(self, PlanPath):
         global switcher
@@ -250,9 +258,11 @@ class BaseController:
             self.path = []
             self.path = PlanPath.poses
             global Tasks
+            Tasks = list()
             segment = [i.pose.position for i in self.path]
             if len(segment) >= 2:
                 Tasks = self.linear_analyse(segment)
+                self.visualise(Tasks)
 
     def PubcmdCB(self, data):
         global cmd_queue
@@ -293,7 +303,6 @@ class BaseController:
                             if self.cmd_vel.linear.x >= self.GoalTolerant:
                                 cmd.linear.x = self.cmd_vel.linear.x
                             else:
-                                # self.cmd_vel.linear.x = 0
                                 cmd.linear.x = 0
                 else:
                     rospy.logerr('both linear and angular input is zero!')
@@ -301,6 +310,9 @@ class BaseController:
 
     def linear_analyse(self, points):
         nodes = CVlib.Linear_analyse(points)
+        return nodes
+
+    def visualise(self, nodes):
         if self.visual_test:
             color = ColorRGBA()
             scale = Point()
@@ -310,16 +322,8 @@ class BaseController:
             color.g = 0.0
             color.b = 1.0
             color.a = 1.0
-            result = maplib.visual_test(nodes, Marker.POINTS, color, scale)
+            nodes[0].z = 0.2
+            nodes[-1].z = 0.4
+            result = maplib.visual_test(nodes, Marker.POINTS, color, scale, 0)
             pub = rospy.Publisher('/base_controller_key_node', Marker, queue_size=1)
             pub.publish(result)
-        return nodes
-
-# if __name__ == '__main__':
-#     rospy.init_node('BaseController_X')
-#     try:
-#         rospy.loginfo("initialization system")
-#         BaseController()
-#         ClearParams()
-#     except rospy.ROSInterruptException:
-#         rospy.loginfo("node terminated.")
