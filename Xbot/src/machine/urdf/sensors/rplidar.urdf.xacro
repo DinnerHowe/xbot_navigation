@@ -22,7 +22,7 @@
       </inertial>
     </link>
     <joint name="base_laser_link" type="fixed">
-      <origin xyz="0.12 0.0 0.15" rpy="0.0 0.0 0.0" />
+      <origin xyz="0.07 0.0 0.21" rpy="0.0 0.0 0.0" />
       <parent link="${parent}" />
       <child link="laser" />
     </joint>
@@ -31,9 +31,9 @@
     <link name="global_scan"/>
     <joint name="base_link_to_global_scan" type="fixed">
       <!--<origin xyz="0.0 0.0 0.2" rpy="0 0.0 0.0" />-->
-      <origin xyz="0.12 0.0 0.35" rpy="0 0.0 0.0" />
+      <origin xyz="0.12 0.0 0.56" rpy="0 0.0 0.0" />
       <!--<parent link="base_link" />-->
-      <parent link="laser" />
+      <parent link="${parent}" />
       <child link="global_scan" />
     </joint>
 

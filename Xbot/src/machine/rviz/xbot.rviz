@@ -10,7 +10,6 @@ Panels:
         - /AsusLaserScan1/Autocompute Value Bounds1
         - /TF1/Frames1
         - /DepthCloud1/Auto Size1
-        - /tester1
         - /tester2
       Splitter Ratio: 0.643892
     Tree Height: 824
@@ -33,7 +32,7 @@ Panels:
     Experimental: true
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: AsusLaserScan
 Visualization Manager:
   Class: ""
   Displays:
@@ -160,7 +159,7 @@ Visualization Manager:
       Marker Topic: /robot_orientation
       Name: robot orientation
       Namespaces:
-        robot_uni_marker: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -184,7 +183,7 @@ Visualization Manager:
       Marker Topic: /base_controller_key_node
       Name: plan_nodes
       Namespaces:
-        detector_visual_test: true
+        {}
       Queue Size: 100
       Value: true
     - Alpha: 1
@@ -256,36 +255,6 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 0.1602
-        Min Value: 0.1602
-        Value: true
-      Axis: Z
-      Channel Name: intensity
-      Class: rviz/LaserScan
-      Color: 0; 0; 255
-      Color Transformer: FlatColor
-      Decay Time: 0
-      Enabled: false
-      Invert Rainbow: false
-      Max Color: 255; 255; 255
-      Max Intensity: 35
-      Min Color: 0; 0; 0
-      Min Intensity: 9
-      Name: RPlidarLaserScan
-      Position Transformer: XYZ
-      Queue Size: 10
-      Selectable: true
-      Size (Pixels): 3
-      Size (m): 0.02
-      Style: Points
-      Topic: /rplidar_scan
-      Unreliable: false
-      Use Fixed Frame: true
-      Use rainbow: true
-      Value: false
-    - Alpha: 1
-      Autocompute Intensity Bounds: true
-      Autocompute Value Bounds:
         Max Value: -9999
         Min Value: 9999
         Value: true
@@ -295,7 +264,7 @@ Visualization Manager:
       Color: 255; 0; 0
       Color Transformer: FlatColor
       Decay Time: 0
-      Enabled: false
+      Enabled: true
       Invert Rainbow: false
       Max Color: 255; 0; 0
       Max Intensity: -999999
@@ -303,7 +272,7 @@ Visualization Manager:
       Min Intensity: 999999
       Name: LaserScan
       Position Transformer: XYZ
-      Queue Size: 10
+      Queue Size: 1
       Selectable: true
       Size (Pixels): 3
       Size (m): 0.02
@@ -312,7 +281,37 @@ Visualization Manager:
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
-      Value: false
+      Value: true
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 0.1602
+        Min Value: 0.1602
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz/LaserScan
+      Color: 255; 85; 0
+      Color Transformer: FlatColor
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 35
+      Min Color: 0; 0; 0
+      Min Intensity: 9
+      Name: RPlidarLaserScan
+      Position Transformer: XYZ
+      Queue Size: 1
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 0.02
+      Style: Points
+      Topic: /rplidar_scan
+      Unreliable: false
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
@@ -325,7 +324,7 @@ Visualization Manager:
       Color: 255; 255; 0
       Color Transformer: FlatColor
       Decay Time: 0
-      Enabled: false
+      Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 0
       Max Intensity: 41
@@ -342,7 +341,7 @@ Visualization Manager:
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
-      Value: false
+      Value: true
     - Class: rviz/TF
       Enabled: false
       Frame Timeout: 15
@@ -389,11 +388,6 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
-        camera_platform:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
         camera_rgb_frame:
           Alpha: 1
           Show Axes: false
@@ -402,27 +396,37 @@ Visualization Manager:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        frontleft_omniwheel:
+        caster_back_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        frontright_omniwheel:
+        caster_front_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
+        cliff_sensor_front_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        cliff_sensor_left_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        cliff_sensor_right_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
         global_scan:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-          Value: true
-        laser:
+        gyro_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-          Value: true
-        left_wheel:
+        laser:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -432,42 +436,157 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
-        platform1:
+        plate_bottom_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        platform2:
+        plate_middle_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        platform3:
+        plate_top_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        platform4:
+        plate_top_link2:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        platform5:
+        plate_top_link3:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        rearleft_omniwheel:
+        pole_bottom_0_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        rearright_omniwheel:
+        pole_bottom_1_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        right_wheel:
+        pole_bottom_2_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_bottom_3_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_bottom_4_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_bottom_5_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_kinect_0_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_kinect_1_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_middle_0_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_middle_1_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_middle_2_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_middle_3_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_top_0_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_top_0_link2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_top_0_link3:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_top_1_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_top_1_link2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_top_1_link3:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_top_2_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_top_2_link2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_top_2_link3:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_top_3_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_top_3_link2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pole_top_3_link3:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        wheel_left_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        wheel_right_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -574,7 +693,7 @@ Visualization Manager:
       Value: true
   Enabled: true
   Global Options:
-    Background Color: 48; 48; 48
+    Background Color: 0; 0; 0
     Fixed Frame: map
     Frame Rate: 30
   Name: root
@@ -594,22 +713,22 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/ThirdPersonFollower
-      Distance: 14.516
+      Distance: 11.1277
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -1.58375
-        Y: 0.048617
-        Z: 1.43051e-06
+        X: 1.34657
+        Y: 0.310715
+        Z: -4.76837e-07
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 1.16479
+      Pitch: 0.885398
       Target Frame: <Fixed Frame>
       Value: ThirdPersonFollower (rviz)
-      Yaw: 1.24733
+      Yaw: 3.43359
     Saved: ~
 Window Geometry:
   Camera:
@@ -629,5 +748,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1429
-  X: 2380
-  Y: 41
+  X: 72
+  Y: 53

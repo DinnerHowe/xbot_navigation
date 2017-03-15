@@ -322,8 +322,7 @@ class BaseController:
             color.g = 0.0
             color.b = 1.0
             color.a = 1.0
-            nodes[0].z = 0.2
-            nodes[-1].z = 0.4
+            node
             result = maplib.visual_test(nodes, Marker.POINTS, color, scale, 0)
             pub = rospy.Publisher('/base_controller_key_node', Marker, queue_size=1)
             pub.publish(result)

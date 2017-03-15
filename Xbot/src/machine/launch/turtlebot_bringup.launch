@@ -7,17 +7,14 @@
   <arg name="stacks"            default="hexagons" />
   
   <arg name="3d_sensor"         default="asux_xtion_pro" />
-  
-  <arg name="simulation"        default="$(env TURTLEBOT_SIMULATION)"   doc="set flags to indicate this turtle is run in simulation mode."/>
-  
+
   <arg name="serialport"        default="$(env TURTLEBOT_SERIAL_PORT)"  doc="used by create to configure the port it is connected on [/dev/ttyUSB0, /dev/ttyS0]"/>
   
   <arg name="robot_name"        default="$(env TURTLEBOT_NAME)"         doc="used as a unique identifier and occasionally to preconfigure root namespaces, gateway/zeroconf ids etc."/>
   
   <arg name="robot_type"        default="$(env TURTLEBOT_TYPE)"         doc="just in case you are considering a 'variant' and want to make use of this."/>
 
-  <param name="/use_sim_time" value="$(arg simulation)"/>
-  
+
   <!--urdf-->
   <include file="$(find machine)/launch/includes/robot.launch.xml" />
   
@@ -26,13 +23,7 @@
     <arg name="base" value="$(arg base)" />
     <arg name="serialport" value="$(arg serialport)" />
   </include>
-  
-  <!--computer-->
-  <include file="$(find machine)/launch/includes/netbook.launch.xml">
-    <arg name="battery" value="$(arg battery)" />
-  </include>
-    
-  <!--<arg name="scan_topic"        default="/scan" />-->
+
   <!--sensor-->
   <include file="$(find machine)/launch/asus_sense.launch">
     <arg name="camera"                          value="camera"/>
@@ -49,8 +40,6 @@
     <arg name="disparity_registered_processing" value="true"/>
     <arg name="num_worker_threads"              value="4"/>
 
-    <!--<arg name="scan_processing" default= "true"/>-->
-    <!--<arg name="scan_topic" default="$(arg scan_topic)" />-->
   </include>
   
 </launch>

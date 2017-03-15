@@ -615,8 +615,8 @@ if __name__=='__main__':
          # tester7()
          # tester8()
          # tester9()
-         # tester10()
-         tester11()
+         tester10()
+         # tester11()
          rospy.loginfo("process done and quit" )
      except rospy.ROSInterruptException:
          rospy.loginfo("node terminated.")
