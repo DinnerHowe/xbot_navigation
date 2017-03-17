@@ -96,7 +96,7 @@ class fusion():
         self.data = None
         if self.asus_data and self.laser_data:
             if self.asus_data.header.stamp.secs - self.laser_data.header.stamp.secs == 0.0 and self.asus_data.header.stamp.nsecs - self.laser_data.header.stamp.nsecs <= 10.0**6:
-                Data.data_fusion(self.asus_data, self.laser_data, LaserData)
+                Data.data_fusion(self.asus_data, self.laser_data, LaserData, self.tf_rplidar_asus)
                 if len(LaserData) > 0:
                     self.data = LaserData.pop()
                     self.Pub_Data(self.data)

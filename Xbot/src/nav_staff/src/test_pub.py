@@ -27,7 +27,7 @@ class tester9():
 
     def switchCB(self, event):
         switcher = rospy.Publisher('/move_base/switch', String, queue_size=1)
-        string = raw_input(':')
+        string = raw_input('FixedModule / OnePathModule:')
         switcher.publish(string)
 
 

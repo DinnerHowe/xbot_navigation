@@ -81,7 +81,6 @@ class fixed():
         self.detect_store_path()
         self.reset_data()
 
-
     def reset_data(self):
         self.start = None
         self.store = None
@@ -113,7 +112,8 @@ class fixed():
                 self.publish_data(self.PlanTopic, self.path)
         else:
             rospy.logwarn('fixed_plan_maker: No such file')
-            os.mkdir(self.file)
+            # file = open(self.file, "w")
+            # file.close()
 
     def PlanCB(self, event):
         global use_exit_path

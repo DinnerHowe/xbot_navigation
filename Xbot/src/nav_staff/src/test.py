@@ -601,6 +601,10 @@ class tester11():
 
         print 'result_new: ', len(result_new.points), 'result_renew: ', len(result_renew.points)
 
+#测试坐标融合算法
+class tester12():
+    def __init__(self):
+
 
 if __name__=='__main__':
      rospy.init_node('Plan_tester')
@@ -615,7 +619,7 @@ if __name__=='__main__':
          # tester7()
          # tester8()
          # tester9()
-         tester10()
+         # tester10()
          # tester11()
          rospy.loginfo("process done and quit" )
      except rospy.ROSInterruptException:

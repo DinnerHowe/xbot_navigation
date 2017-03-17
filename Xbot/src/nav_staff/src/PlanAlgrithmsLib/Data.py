@@ -8,14 +8,12 @@ Copyright (c) 2017 Xu Zhihao (Howe).  All rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 
-This programm is tested on kuboki base turtlebot.
-
 """
 
 from sensor_msgs.msg import LaserScan
 import rospy
 
-def data_fusion(asus_data, laser_data, LaserData):
+def data_fusion(asus_data, laser_data, LaserData, transform):
     if asus_data != None and laser_data != None:
         data = LaserScan()
         data.angle_min = laser_data.angle_min
@@ -45,3 +43,5 @@ def data_fusion(asus_data, laser_data, LaserData):
             rospy.loginfo('wait for asus data')
         if laser_data == None:
             rospy.loginfo('wait for rplidar data')
+
+def

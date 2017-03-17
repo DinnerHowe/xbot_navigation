@@ -26,7 +26,7 @@ from geometry_msgs.msg import Quaternion
 from std_msgs.msg import String
 
 Tasks = list()
-cmd_queue = collections.deque(maxlen=1)
+cmd_queue = None
 switcher = False
 
 class ClearParams:
@@ -47,8 +47,6 @@ class ClearParams:
         rospy.delete_param('~AngularFree')
         rospy.delete_param('~PublishFrequency')
         rospy.delete_param('~GoalTolerant')
-
-        rospy.delete_param('~visual_test')
 
 class BaseController:
     def __init__(self):
@@ -115,10 +113,6 @@ class BaseController:
         if not rospy.has_param('~GoalTolerant'):
          rospy.set_param('~GoalTolerant', 0.01)
         self.GoalTolerant = rospy.get_param('~GoalTolerant')
-
-        if not rospy.has_param('~visual_test'):
-         rospy.set_param('~visual_test', True)
-        self.visual_test = rospy.get_param('~visual_test')
 
         if not rospy.has_param('~times'):
             rospy.set_param('~times', 2)
@@ -197,11 +191,12 @@ class BaseController:
             angle_cmd = -numpy.pi*2 + angle_cmd
         if angle_cmd < -numpy.pi:
             angle_cmd = numpy.pi * 2 + angle_cmd
-        # print angle_cmd, round(goal_angle - cur_angle, 3)
         cmd_vector.angular.z = round(angle_cmd, 3)
         cmd_vector.linear.x = round(goal_linear, 3)
+        if 0.0 < cmd_vector.angular.z < 0.03:
+            cmd_vector.angular.z = 0.0
         global cmd_queue
-        cmd_queue.append(cmd_vector)
+        cmd_queue = cmd_vector
 
     def AngularDrift(self, Diff_x, Diff_y):
 
@@ -236,9 +231,6 @@ class BaseController:
 
         return orientation
 
-    def acc_speed(self):
-        pass
-
     def PlanFixedCB(self, PlanPath):
         global switcher
         if not switcher:
@@ -250,7 +242,6 @@ class BaseController:
             if len(segment) >= 2:
                 Tasks = self.linear_analyse(segment)
                 Tasks = Tasks * self.times
-                self.visualise(Tasks)
 
     def PlanOnceCB(self, PlanPath):
         global switcher
@@ -262,17 +253,16 @@ class BaseController:
             segment = [i.pose.position for i in self.path]
             if len(segment) >= 2:
                 Tasks = self.linear_analyse(segment)
-                self.visualise(Tasks)
 
     def PubcmdCB(self, data):
         global cmd_queue
         cmd = Twist()
-        if len(cmd_queue) > 0:
-            self.cmd_vel = cmd_queue.pop()
+        if cmd_queue != None:
+            self.cmd_vel = cmd_queue
+            cmd_queue = None
         cmd_pub = rospy.Publisher(self.MotionTopice, Twist, queue_size=1)
         if self.cmd_vel != Twist():
             if abs(self.cmd_vel.angular.z) > self.AngularBias:
-                # print '>AngularBias', self.cmd_vel.angular.z
                 if abs(self.cmd_vel.angular.z) < numpy.pi:
                     if self.cmd_vel.angular.z > 0:
                         cmd.angular.z = self.AngularSP
@@ -312,17 +302,16 @@ class BaseController:
         nodes = CVlib.Linear_analyse(points)
         return nodes
 
-    def visualise(self, nodes):
-        if self.visual_test:
-            color = ColorRGBA()
-            scale = Point()
-            scale.x = 0.05
-            scale.y = 0.05
-            color.r = 0.0
-            color.g = 0.0
-            color.b = 1.0
-            color.a = 1.0
-            node
-            result = maplib.visual_test(nodes, Marker.POINTS, color, scale, 0)
-            pub = rospy.Publisher('/base_controller_key_node', Marker, queue_size=1)
-            pub.publish(result)
+    # def visualise(self, nodes):
+    #     if self.visual_test:
+    #         color = ColorRGBA()
+    #         scale = Point()
+    #         scale.x = 0.05
+    #         scale.y = 0.05
+    #         color.r = 0.0
+    #         color.g = 0.0
+    #         color.b = 1.0
+    #         color.a = 1.0
+    #         result = maplib.visual_test(nodes, Marker.POINTS, color, scale, 1)
+    #         pub = rospy.Publisher('/base_controller_key_node', Marker, queue_size=1)
+    #         pub.publish(result)
