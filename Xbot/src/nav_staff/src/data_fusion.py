@@ -35,7 +35,6 @@ class fusion():
         self.define()
         rospy.Subscriber(self.use_rplidar_topic, LaserScan, self.rplidarCB)
         rospy.Subscriber(self.use_asus_topic, LaserScan, self.asusCB)
-        # rospy.Timer(rospy.Duration(self.period), self.PubLaserCB)
         rospy.spin()
 
     def define(self):

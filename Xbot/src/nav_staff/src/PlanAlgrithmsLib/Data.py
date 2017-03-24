@@ -64,7 +64,6 @@ def data_transform(asus_data, laser_data, transform):
                     data[int((numpy.pi - theta)/-laser_data.angle_increment)] = dis
             angle += asus_data.angle_increment
         return data
-        # LaserData.append(data)
     else:
         if asus_data == None:
             rospy.loginfo('wait for asus data')
