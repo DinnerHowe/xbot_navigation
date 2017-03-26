@@ -27,7 +27,7 @@ from nav_msgs.msg import Odometry
 
 ServerCheck = False
 First = True
-Locker = Lock()
+
 position = tuple()
 orientation = tuple()
 
@@ -55,19 +55,19 @@ class AMCL():
         self.define()
         self.RequestMap()
         rospy.Subscriber(self.InitialposeTopic, PoseWithCovarianceStamped, self.HandleInitialPoseMessage)
-        rospy.Subscriber(self.MapTopic, OccupancyGrid, self.HandleMapMessage)
-        rospy.Subscriber(self.ScanTopic, LaserScan, self.HandleLaserMessage)
-        rospy.Subscriber(self.OdomTopic, Odometry, self.HandleOdomMessage)
-        rospy.Timer(self.amcl_frequency, self.PubamclCB)
+        # rospy.Subscriber(self.MapTopic, OccupancyGrid, self.HandleMapMessage)
+        # rospy.Subscriber(self.ScanTopic, LaserScan, self.HandleLaserMessage)
+        # rospy.Subscriber(self.OdomTopic, Odometry, self.HandleOdomMessage)
+        rospy.Timer(rospy.Duration(0.01), self.AMCLCB)
         rospy.spin()
 
-    def PubamclCB(self, event):
+    def AMCLCB(self, event):
         br = tf.TransformBroadcaster()
         global position
         global orientation
         position = (0,0,0)
         orientation = (0,0,0,1)
-        # br.sendTransform((position, orientation, rospy.Time.now(), self.source_frame, self.global_frame)
+        br.sendTransform(position, orientation, rospy.Time.now(), self.source_frame, self.global_frame)
 
     def RequestMap(self):
         global ServerCheck
@@ -83,13 +83,6 @@ class AMCL():
          self.HandleMapMessage(response.map)
          rospy.loginfo('map info: ' + str(response.map.info.width) + ' X ' + str(response.map.info.height) + ', pix: ' + str(round(response.map.info.resolution,3)))
          First = False
-
-    def HandleMapMessage(self, map_msg):
-        with Locker:
-            self.internal_map = self.ConvertMap(map_msg)
-            self.Pubmap(map_msg)
-            self.apply_pose()
-
 
     def Pubmap(self, map_msg):
         pub = rospy.Publisher(self.AmclMapTopic, OccupancyGrid, queue_size=1)
@@ -112,19 +105,18 @@ class AMCL():
         return map
 
     def HandleInitialPoseMessage(self, init_msg):
-        with Locker:
-            if init_msg.header.frame_id == '':
-                rospy.logwarn('Received initial pose with empty frame_id.  You should always supply a frame_id.')
-            elif init_msg.header.frame_id != self.map_.header.frame_id:
-                rospy.logwarn('Ignoring initial pose in frame' + str(init_msg.header.frame_id) +';' + 'initial poses must be in the global frame' + str(self.map_.header.frame_id))
-            else:
-                print 'get initial pose'
-                init_pose = PoseStamped()
-                init_pose.header = init_msg.header
-                init_pose.pose = init_msg.pose.pose
-                rospy.loginfo('updating robot initial pose')
-                self.PubInitPose(init_pose)
-                self.init_pose = copy.deepcopy(init_pose)
+        if init_msg.header.frame_id == '':
+            rospy.logwarn('Received initial pose with empty frame_id.  You should always supply a frame_id.')
+        elif init_msg.header.frame_id != self.map_.header.frame_id:
+            rospy.logwarn('Ignoring initial pose in frame' + str(init_msg.header.frame_id) +';' + 'initial poses must be in the global frame' + str(self.map_.header.frame_id))
+        else:
+            print 'get initial pose'
+            init_pose = PoseStamped()
+            init_pose.header = init_msg.header
+            init_pose.pose = init_msg.pose.pose
+            rospy.loginfo('updating robot initial pose')
+            self.PubInitPose(init_pose)
+            self.init_pose = copy.deepcopy(init_pose)
 
     def apply_pose(self):
         #用来update robot position in map
@@ -146,30 +138,17 @@ class AMCL():
         pub = rospy.Publisher('/set_pose', PoseStamped, queue_size=1)
         pub.publish(pose_msg)
         self.current_pose = PoseStamped()
-        self.current_pose = copy.deepcopy(pose_msg)
+        self.current_pose = pose_msg
 
-    def HandleLaserMessage(self, data):
-        pass
-
-    def HandleOdomMessage(self, data):
-
-        self.current_pose.pose.position.x += data.pose.pose.position.x
-        self.current_pose.pose.position.y += data.pose.pose.position.y
-        self.current_pose.pose.position.z += data.pose.pose.position.z
-
-        self.current_pose.pose.orientation.x += data.pose.pose.orientation.x
-        self.current_pose.pose.orientation.y += data.pose.pose.orientation.y
-        self.current_pose.pose.orientation.z += data.pose.pose.orientation.z
-        self.current_pose.pose.orientation.w += data.pose.pose.orientation.w
 
     def define(self):
-        if not rospy.has_param('~use_map_topic'):
-            rospy.set_param('~use_map_topic', '/map_raw')
-        self.MapTopic = rospy.get_param('~use_map_topic')
-
-        if not rospy.has_param('~use_scan_topic'):
-            rospy.set_param('~use_scan_topic', '/scan')
-        self.ScanTopic = rospy.get_param('~use_scan_topic')
+        # if not rospy.has_param('~use_map_topic'):
+        #     rospy.set_param('~use_map_topic', '/map_raw')
+        # self.MapTopic = rospy.get_param('~use_map_topic')
+        #
+        # if not rospy.has_param('~use_scan_topic'):
+        #     rospy.set_param('~use_scan_topic', '/scan')
+        # self.ScanTopic = rospy.get_param('~use_scan_topic')
 
         if not rospy.has_param('~use_initialpose_topic'):
             rospy.set_param('~use_initialpose_topic', '/initialpose')
@@ -179,17 +158,17 @@ class AMCL():
         #     rospy.set_param('~AmclMapTopic', '/amcl_map')
         # self.AmclMapTopic = rospy.get_param('~AmclMapTopic')
 
-        if not rospy.has_param("~target_frame"):
-            rospy.set_param("~target_frame", "/odom")
-        self.target_frame = rospy.get_param("~target_frame")
-
-        if not rospy.has_param("~source_frame"):
-            rospy.set_param("~source_frame", "/base_link")
-        self.source_frame = rospy.get_param("~source_frame")
-
-        if not rospy.has_param("~global_frame"):
-            rospy.set_param("~global_frame", "/map")
-        self.global_frame = rospy.get_param("~global_frame")
+        # if not rospy.has_param("~target_frame"):
+        #     rospy.set_param("~target_frame", "/odom")
+        # self.target_frame = rospy.get_param("~target_frame")
+        #
+        # if not rospy.has_param("~source_frame"):
+        #     rospy.set_param("~source_frame", "/base_link")
+        # self.source_frame = rospy.get_param("~source_frame")
+        #
+        # if not rospy.has_param("~global_frame"):
+        #     rospy.set_param("~global_frame", "/map")
+        # self.global_frame = rospy.get_param("~global_frame")
 
         if not rospy.has_param("~initial_position_x"):
             rospy.set_param("~initial_position_x", 0)
@@ -219,11 +198,6 @@ class AMCL():
             rospy.set_param("~initial_orientation_w", 1)
         init_orientation_w = rospy.get_param("~initial_orientation_w")
 
-        if not rospy.has_param("~AMCL_frequency"):
-            rospy.set_param("~AMCL_frequency", 10)
-        AMCL_frequency = rospy.get_param("~AMCL_frequency")
-
-        self.amcl_frequency = 1.0/AMCL_frequency
 
         self.listener=tf.TransformListener()
 
@@ -239,6 +213,8 @@ class AMCL():
         self.init_pose.pose.orientation.w = init_orientation_w
 
         self.PubInitPose(self.init_pose)
+
+        self.map_ = rospy.wait_for_message('/cost_plan_map', OccupancyGrids)
 
 if __name__=='__main__':
     rospy.init_node('amcl_adapted')
