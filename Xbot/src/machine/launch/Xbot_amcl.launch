@@ -1,7 +1,6 @@
 <!--this file is demo for nav with auto obstacle avoidance -->
 <launch>
 
-    global scan
     <include file="$(find machine)/launch/lidar_scan.launch"/>
 
     <!--map saver-->
