@@ -40,3 +40,11 @@ def get_store_path(data):
             path.append(pose)
         return path
 
+def detect_store_path(file):
+    import os
+    import rospy
+    if os.path.isfile(file):
+        data = read_path(file)
+        return get_store_path(data)
+    else:
+        rospy.logwarn('fixed_plan_maker: No such file')

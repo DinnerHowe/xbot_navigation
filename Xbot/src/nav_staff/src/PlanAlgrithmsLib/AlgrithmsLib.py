@@ -225,18 +225,22 @@ class JPS():
         if path == []:
             return []
         else:
-            rospy.loginfo('start generate a full path')
-            result = []
-            cur_pose = path[0]
-            for i in path[1:]:
-                while abs(i.pose.position.x - cur_pose.pose.position.x) >= 0.05 or abs(i.pose.position.y - cur_pose.pose.position.y) >= 0.05:
-                    x_increase = self._signum(round(i.pose.position.x - cur_pose.pose.position.x, 1))
-                    y_increase = self._signum(round(i.pose.position.y - cur_pose.pose.position.y, 1))
-                    cur_pose.pose.position.x += x_increase
-                    cur_pose.pose.position.y += y_increase
-                    result.append(copy.deepcopy(cur_pose))
-            rospy.loginfo('generate a full path')
-            return result
+            try:
+                rospy.loginfo('start generate a full path')
+                result = []
+                cur_pose = path[0]
+                for i in path[1:]:
+                    while abs(i.pose.position.x - cur_pose.pose.position.x) >= 0.05 or abs(i.pose.position.y - cur_pose.pose.position.y) >= 0.05:
+                        x_increase = self._signum(round(i.pose.position.x - cur_pose.pose.position.x, 1))
+                        y_increase = self._signum(round(i.pose.position.y - cur_pose.pose.position.y, 1))
+                        cur_pose.pose.position.x += x_increase
+                        cur_pose.pose.position.y += y_increase
+                        result.append(copy.deepcopy(cur_pose))
+                rospy.loginfo('generate a full path')
+                return result
+            except:
+                rospy.logwarn('cannot make a plan right now')
+                return []
 
     def _signum(self, n):
         if n > 0:

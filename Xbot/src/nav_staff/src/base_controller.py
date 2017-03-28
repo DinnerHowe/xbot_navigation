@@ -240,6 +240,7 @@ class BaseController:
             if len(segment) >= 2:
                 Tasks = self.linear_analyse(segment)
                 Tasks = Tasks * self.times
+                print 1
 
     def PlanOnceCB(self, PlanPath):
         global switcher

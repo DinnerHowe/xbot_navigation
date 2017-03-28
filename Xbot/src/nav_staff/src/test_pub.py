@@ -111,12 +111,20 @@ class tester2():
             seq += 1
             rate.sleep()
 
+class tester3():
+    def __init__(self):
+        rospy.Timer(rospy.Duration(0.1), self.pubCB)
+        rospy.spin()
+    def pubCB(self, event):
+        res = raw_input('True / False:')
+        pub = rospy.Publisher('/StopRun_run', String, queue_size=1)
+        pub.publish(res)
 
 if __name__=='__main__':
      rospy.init_node('Plan_tester_pub')
      try:
          rospy.loginfo( "initialization system")
-         tester2()
+         tester3()
          rospy.loginfo("process done and quit" )
      except rospy.ROSInterruptException:
          rospy.loginfo("node terminated.")
