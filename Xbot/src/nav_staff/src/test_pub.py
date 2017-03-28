@@ -35,6 +35,7 @@ class tester1():
         string = raw_input('FixedModule / OnePathModule:')
         switcher.publish(string)
 
+#数据融合
 class tester2():
     def __init__(self):
         inf = numpy.inf
@@ -112,18 +113,24 @@ class tester2():
             seq += 1
             rate.sleep()
 
+#结束触发
 class tester3():
     def __init__(self):
+        self.pub = rospy.Publisher('/StopRun_run', Bool, queue_size=1)
         rospy.Timer(rospy.Duration(0.1), self.pubCB)
+        rospy.Subscriber('StopRun_Connected', Bool, self.start)
         rospy.spin()
+
+    def start(self, data):
+        pass
+
     def pubCB(self, event):
         res = raw_input('True / False:')
-        pub = rospy.Publisher('/StopRun_run', Bool, queue_size=1)
         if res == 'True':
             res = True
         else:
             res = False
-        pub.publish(res)
+        self.pub.publish(res)
 
 if __name__=='__main__':
      rospy.init_node('Plan_tester_pub')

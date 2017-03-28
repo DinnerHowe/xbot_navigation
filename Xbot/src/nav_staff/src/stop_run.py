@@ -13,20 +13,18 @@ This programm is tested on kuboki base turtlebot.
 """
 
 import rospy
-from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Path
 import collections
 from geometry_msgs.msg import PointStamped
 from PlanAlgrithmsLib import AlgrithmsLib
-import copy
 from PlanAlgrithmsLib import PathLib
 import getpass
 from nav_msgs.srv import GetMap
 from std_msgs.msg import Bool
+from geometry_msgs.msg import PoseStamped
 
 Finish = False
 path_q = collections.deque()
-
 
 class ClearParams:
     def __init__(self):
@@ -35,8 +33,11 @@ class ClearParams:
         rospy.delete_param('~PlanTopic')
         rospy.delete_param('~PlanTopic_view')
         rospy.delete_param('~PathStorePath')
+        rospy.delete_param('~times')
+        rospy.delete_param('~StopRun_RUN_Topic')
+        rospy.delete_param('~Speak_Done_Topic')
 
-class fixed():
+class StopRun():
     def __init__(self):
         rospy.sleep(1.0)
         self.define()
@@ -69,16 +70,43 @@ class fixed():
             rospy.set_param('~PathStorePath', 'path.json')
         self.file = file + rospy.get_param('~PathStorePath')
 
+        if not rospy.has_param('~times'):
+            rospy.set_param('~times', 2)
+        self.times = rospy.get_param('~times')
+
+        if not rospy.has_param('~StopRun_RUN_Topic'):
+            rospy.set_param('~StopRun_RUN_Topic', '/StopRun_run')
+        self.StopRun_RUN_Topic = rospy.get_param('~StopRun_RUN_Topic')
+
+        if not rospy.has_param('~Speak_Done_Topic'):
+            rospy.set_param('~Speak_Done_Topic', '/speak_done')
+        self.Speak_Done_Topic = rospy.get_param('~Speak_Done_Topic')
+
+        if not rospy.has_param('~StopRun_Connected_Topic'):
+            rospy.set_param('~StopRun_Connected_Topic', '/StopRun_Connected')
+        self.StopRun_Connected_Topic = rospy.get_param('~StopRun_Connected_Topic')
+
         self.period = rospy.Duration(0.01)
         self.JPS = AlgrithmsLib.JPS()
         self.reset_data()
+        self.varify_connection()
+
+    def varify_connection(self):
+        global Begin
+        rospy.logwarn('varify_connection with topic: '+ str(self.Speak_Done_Topic) + ' ' +str(self.StopRun_RUN_Topic))
+        if not rospy.wait_for_message(self.Speak_Done_Topic, Bool).data and not rospy.wait_for_message(self.StopRun_RUN_Topic, Bool).data:
+            rospy.logwarn('varify_connection done')
+            StopRun_Connected = rospy.Publisher(self.StopRun_Connected_Topic, Bool, queue_size = 1)
+            for i in range(5):
+                StopRun_Connected.publish(True)
+
 
     def reset_data(self):
         self.start = None
         self.seq = 0
         self.pub_seq = 0
-        self.path = []
-        self.save_data = []
+        self.path = collections.deque()
+        self.reviewpath = []
         self.path_pub = Path()
         self.init_stack()
 
@@ -88,23 +116,46 @@ class fixed():
         self.start = rospy.wait_for_message(self.OdomTopic, PoseStamped).pose.position
         rospy.loginfo('StopRun: get odom')
 
-
     def PlanCB(self, event):
         global Finish
         try:
             if not Finish:
-                Finish = rospy.wait_for_message('/StopRun_run', Bool).data
-                rospy.logwarn('StopRun: Finish: ' + str(Finish))
-            if self.path == []:
-                Finish = False
+                Finish = rospy.wait_for_message(self.StopRun_RUN_Topic, Bool).data
+                if len(self.path) == 0:
+                    Finish = False
+                    rospy.logwarn('StopRun: No path generated not start yet')
+                else:
+                    rospy.logwarn('StopRun: Finish: ' + str(Finish))
+                if Finish:
+                    paths = list(self.path)
+                    paths *= 2
+                    self.path.clear()
+                    [self.path.append(i) for i in paths]
+                self.actionpath = self.path.popleft()
         except:
             pass
-
         if Finish:
-            if self.pub_seq <= 10:
-                self.pub_seq = self.publish_data(self.PlanTopic, self.path, self.pub_seq)
-            else:
-                rospy.signal_shutdown('restart')
+            if self.pub_seq <= 5:
+                self.pub_seq = self.publish_data(self.PlanTopic, self.actionpath, self.pub_seq)
+            cur_position = rospy.wait_for_message('/robot_position_in_map', PoseStamped).pose.position
+            if self.arrive_check(cur_position, self.actionpath[-1].pose.position):
+                StopRun_Connected = rospy.Publisher(self.StopRun_Connected_Topic, Bool, queue_size=1)
+                for i in range(5):
+                    StopRun_Connected.publish(True)
+                if len(self.path) == 0:
+                    rospy.signal_shutdown('restart')
+                else:
+                    if rospy.wait_for_message(self.Speak_Done_Topic, Bool).data:
+                        self.pub_seq = 0
+                        self.actionpath = self.path.popleft()
+                    else:
+                        rospy.logwarn('StopRun: wait for speak done')
+
+    def arrive_check(self, cur, goal):
+        if abs(cur.x - goal.x) <= 0.01 and abs(cur.y - goal.y) <= 0.01:
+            return True
+        else:
+            return False
 
     def GoalCB(self, goal):
         global Finish
@@ -116,19 +167,19 @@ class fixed():
                     global path_q
                     path_q.append(path)
                 else:
-                    rospy.loginfo('StopRun: goal not valide')
+                    rospy.logwarn('StopRun: goal not valide')
             else:
                 rospy.logwarn('StopRun: wait fot odom please click again')
                 self.init_stack()
 
-
     def PubPlan_viewCB(self, event):
         global path_q
         if len(path_q) > 0:
-            self.path += path_q.pop()
-            self.save_data = self.path
+            path = path_q.pop()
+            self.reviewpath += path
+            self.path.append(path)
         if not Finish:
-            self.seq = self.publish_data(self.PlanTopic_view, self.path, self.seq)
+            self.seq = self.publish_data(self.PlanTopic_view, self.reviewpath, self.seq)
 
     def publish_data(self, Topic, data, seq):
         PubPlan = Path()
@@ -154,12 +205,3 @@ class fixed():
         else:
             return []
 
-
-if __name__=='__main__':
-     rospy.init_node('StopRun')
-     try:
-         rospy.loginfo("StopRun: initialization system")
-         fixed()
-         rospy.loginfo("StopRun: process done and quit" )
-     except rospy.ROSInterruptException:
-         rospy.loginfo("StopRun: node terminated.")

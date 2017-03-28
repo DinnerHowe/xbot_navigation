@@ -9,9 +9,11 @@ Panels:
         - /Warning Flag1/Namespaces1
         - /JPSPath1
         - /fixedPath1
+        - /fixedPathpreview1
         - /AsusLaserScan1/Autocompute Value Bounds1
         - /TF1/Frames1
         - /DepthCloud1/Auto Size1
+        - /tester1
       Splitter Ratio: 0.643892
     Tree Height: 944
   - Class: rviz/Selection
@@ -218,7 +220,7 @@ Visualization Manager:
       Head Length: 0.2
       Length: 0.3
       Line Style: Billboards
-      Line Width: 0.02
+      Line Width: 0.04
       Name: fixedPath
       Offset:
         X: 0
@@ -557,24 +559,24 @@ Visualization Manager:
         ui_marker: true
       Zoom Factor: 1
     - Class: rviz/Marker
-      Enabled: true
+      Enabled: false
       Marker Topic: /tester_renew
       Name: tester
       Namespaces:
         {}
       Queue Size: 1
-      Value: true
+      Value: false
     - Class: rviz/Marker
-      Enabled: true
+      Enabled: false
       Marker Topic: /tester_new
       Name: tester
       Namespaces:
         {}
       Queue Size: 1
-      Value: true
+      Value: false
   Enabled: true
   Global Options:
-    Background Color: 255; 255; 255
+    Background Color: 0; 0; 0
     Fixed Frame: map
     Frame Rate: 30
   Name: root
@@ -594,22 +596,22 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/ThirdPersonFollower
-      Distance: 30.5732
+      Distance: 17.5539
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 10.3057
-        Y: 2.17979
+        X: 1.88368
+        Y: 2.57742
         Z: 4.76837e-07
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 1.5698
+      Pitch: 1.0948
       Target Frame: <Fixed Frame>
       Value: ThirdPersonFollower (rviz)
-      Yaw: 0.0136545
+      Yaw: 0.268655
     Saved: ~
 Window Geometry:
   Camera:
