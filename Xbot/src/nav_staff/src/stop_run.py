@@ -94,14 +94,15 @@ class fixed():
         try:
             if not Finish:
                 Finish = rospy.wait_for_message('/StopRun_run', Bool).data
+                rospy.logwarn('StopRun: Finish: ' + str(Finish))
             if self.path == []:
                 Finish = False
-            rospy.logwarn('StopRun: Finish: ' + str(Finish))
         except:
             pass
+
         if Finish:
             if self.pub_seq <= 10:
-                self.publish_data(self.PlanTopic, self.path, self.pub_seq)
+                self.pub_seq = self.publish_data(self.PlanTopic, self.path, self.pub_seq)
             else:
                 rospy.signal_shutdown('restart')
 
@@ -127,11 +128,11 @@ class fixed():
             self.path += path_q.pop()
             self.save_data = self.path
         if not Finish:
-            self.publish_data(self.PlanTopic_view, self.path, self.seq)
+            self.seq = self.publish_data(self.PlanTopic_view, self.path, self.seq)
 
     def publish_data(self, Topic, data, seq):
         PubPlan = Path()
-        PubPlan.header.seq = self.seq
+        PubPlan.header.seq = seq
         seq += 1
         PubPlan.header.stamp = rospy.Time.now()
         PubPlan.header.frame_id = 'map'
@@ -139,6 +140,7 @@ class fixed():
         if data != []:
             pub = rospy.Publisher(Topic, Path, queue_size=1)
             pub.publish(PubPlan)
+        return seq
 
     def Generate_path(self, start, end):
         rospy.wait_for_service('/JPS_map_init')

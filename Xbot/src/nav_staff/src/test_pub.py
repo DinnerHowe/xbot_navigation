@@ -12,6 +12,7 @@ This programm is tested on kuboki base turtlebot.
 """
 import rospy
 from std_msgs.msg import String
+from std_msgs.msg import Bool
 from sensor_msgs.msg import LaserScan
 import numpy
 from PlanAlgrithmsLib import Data
@@ -117,7 +118,11 @@ class tester3():
         rospy.spin()
     def pubCB(self, event):
         res = raw_input('True / False:')
-        pub = rospy.Publisher('/StopRun_run', String, queue_size=1)
+        pub = rospy.Publisher('/StopRun_run', Bool, queue_size=1)
+        if res == 'True':
+            res = True
+        else:
+            res = False
         pub.publish(res)
 
 if __name__=='__main__':
