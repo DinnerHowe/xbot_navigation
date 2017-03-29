@@ -82,23 +82,22 @@ class StopRun():
             rospy.set_param('~Speak_Done_Topic', '/speak_done')
         self.Speak_Done_Topic = rospy.get_param('~Speak_Done_Topic')
 
-        if not rospy.has_param('~StopRun_Connected_Topic'):
-            rospy.set_param('~StopRun_Connected_Topic', '/StopRun_Connected')
-        self.StopRun_Connected_Topic = rospy.get_param('~StopRun_Connected_Topic')
-
         self.period = rospy.Duration(0.01)
         self.JPS = AlgrithmsLib.JPS()
         self.reset_data()
+        self.StopRun_ = rospy.Publisher(self.StopRun_RUN_Topic, Bool, queue_size=1)
         self.varify_connection()
 
     def varify_connection(self):
-        global Begin
-        rospy.logwarn('varify_connection with topic: '+ str(self.Speak_Done_Topic) + ' ' +str(self.StopRun_RUN_Topic))
-        if not rospy.wait_for_message(self.Speak_Done_Topic, Bool).data and not rospy.wait_for_message(self.StopRun_RUN_Topic, Bool).data:
-            rospy.logwarn('varify_connection done')
-            StopRun_Connected = rospy.Publisher(self.StopRun_Connected_Topic, Bool, queue_size = 1)
-            for i in range(5):
-                StopRun_Connected.publish(True)
+        rospy.logwarn('varify_connection with topic: '+ str(self.Speak_Done_Topic))
+        while True:
+            if not rospy.wait_for_message(self.Speak_Done_Topic, Bool, timeout= 100.0).data:
+                rospy.logwarn('varify_connection done')
+                self.StopRun_.publish(True)
+                break
+            else:
+                rospy.logwarn('varify_connection failed')
+                self.StopRun_.publish(False)
 
 
     def reset_data(self):
@@ -120,7 +119,7 @@ class StopRun():
         global Finish
         try:
             if not Finish:
-                Finish = rospy.wait_for_message(self.StopRun_RUN_Topic, Bool).data
+                Finish = rospy.wait_for_message(self.Speak_Done_Topic, Bool).data
                 if len(self.path) == 0:
                     Finish = False
                     rospy.logwarn('StopRun: No path generated not start yet')
@@ -139,9 +138,7 @@ class StopRun():
                 self.pub_seq = self.publish_data(self.PlanTopic, self.actionpath, self.pub_seq)
             cur_position = rospy.wait_for_message('/robot_position_in_map', PoseStamped).pose.position
             if self.arrive_check(cur_position, self.actionpath[-1].pose.position):
-                StopRun_Connected = rospy.Publisher(self.StopRun_Connected_Topic, Bool, queue_size=1)
-                for i in range(5):
-                    StopRun_Connected.publish(True)
+                self.StopRun_.publish(True)
                 if len(self.path) == 0:
                     rospy.signal_shutdown('restart')
                 else:

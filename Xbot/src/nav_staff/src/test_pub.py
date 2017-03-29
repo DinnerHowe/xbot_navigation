@@ -116,21 +116,22 @@ class tester2():
 #结束触发
 class tester3():
     def __init__(self):
+        self.Connect = True
         self.pub = rospy.Publisher('/StopRun_run', Bool, queue_size=1)
         rospy.Timer(rospy.Duration(0.1), self.pubCB)
-        rospy.Subscriber('StopRun_Connected', Bool, self.start)
         rospy.spin()
 
-    def start(self, data):
-        pass
-
     def pubCB(self, event):
-        res = raw_input('True / False:')
-        if res == 'True':
-            res = True
+        if self.Connect:
+            print 2
+            res = raw_input('True / False:')
+            if res == 'True':
+                res = True
+            else:
+                res = False
+            self.pub.publish(res)
         else:
-            res = False
-        self.pub.publish(res)
+            pass
 
 if __name__=='__main__':
      rospy.init_node('Plan_tester_pub')

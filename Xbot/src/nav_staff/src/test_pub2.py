@@ -13,29 +13,29 @@ This programm is tested on kuboki base turtlebot.
 import rospy
 from std_msgs.msg import Bool
 
+# speaker simulation
 class tester1():
     def __init__(self):
-        self.data = False
+        self.Connected = False
+        self.StopRun = False
         self.pub = rospy.Publisher('/speak_done', Bool, queue_size=1)
-        rospy.Subscriber('/StopRun_Connected', Bool, self.start)
+        rospy.Timer(rospy.Duration(0.1), self.Connect)
         rospy.Timer(rospy.Duration(0.1), self.pubCB)
         rospy.spin()
 
-    def start(self, data):
-        self.pub.publish(True)
-        print data.data
-        self.data = True
+    def Connect(self, event):
+        if not self.Connected:
+            print 'try connect'
+            self.pub.publish(False)
+            self.Connected = rospy.wait_for_message('/StopRun_run', Bool)
 
     def pubCB(self, event):
-        if not self.data:
-            res = raw_input('True / False:')
-            if res == 'True':
-                res = True
-            else:
-                res = False
-            self.pub.publish(res)
-        else:
-            pass
+        if self.Connected:
+            print 'speaker sim'
+            rospy.sleep(2.0)
+            self.pub.publish(True)
+
+
 
 if __name__=='__main__':
      rospy.init_node('Plan_tester_pub2')
