@@ -3,7 +3,7 @@
     <!--<arg name="scan_height"      value="200"/>-->
     <!--<arg name="camera"      value="camera"/>-->
 
-    <!--<include file="$(find rplidar_python)/launch/rplidar.launch"/>-->
+    <include file="$(find rplidar_python)/launch/rplidar.launch"/>
 
     <!--<node pkg="nodelet" type="nodelet" name="depthimage_to_laserscan" args="load depthimage_to_laserscan/DepthImageToLaserScanNodelet $(arg camera)/$(arg camera)_nodelet_manager">-->
         <!--<param name="scan_height" value="$(arg scan_height)" />-->
