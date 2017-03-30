@@ -82,11 +82,12 @@ class fusion():
         self.asus_data = asus_message
 
     def Pub_Data(self, ranges):
-        data = self.laser_data
-        data.header.stamp = rospy.Time.now()
-        data.header.frame_id = 'global_scan'
-        data.header.seq = self.seq
-        data.ranges = ranges
-        self.seq += 1
-        pub_data = rospy.Publisher(self.scan_topic, LaserScan, queue_size=1)
-        pub_data.publish(data)
+        if ranges != None:
+            data = self.laser_data
+            data.header.stamp = rospy.Time.now()
+            data.header.frame_id = 'global_scan'
+            data.header.seq = self.seq
+            data.ranges = ranges
+            self.seq += 1
+            pub_data = rospy.Publisher(self.scan_topic, LaserScan, queue_size=1)
+            pub_data.publish(data)
