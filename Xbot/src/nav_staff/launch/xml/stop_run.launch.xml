@@ -7,7 +7,7 @@
     <arg name = 'PathStorePath'             default = 'path.json' />
     <arg name = 'times'                     default = '2' />
     <arg name = 'StopRun_RUN_Topic'         default = '/StopRun_run' />
-    <arg name = 'Speak_Done_Topic'          default = '/speak_done' />
+    <arg name = 'Speak_Done_Topic'          default = '/speaker_done' />
 
     <node pkg='nav_staff' type='stop_run_node.py' name='stop_run' output="screen"  respawn="true">
         <param name="OdomTopic"                         value="$(arg OdomTopic)" />

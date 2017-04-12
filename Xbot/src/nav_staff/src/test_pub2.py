@@ -19,7 +19,7 @@ class tester1():
         self.Connected = True
         self.speak = False
         self.count = 0
-        self.pub = rospy.Publisher('/speak_done', Bool, queue_size=1)
+        self.pub = rospy.Publisher('/speaker_done', Bool, queue_size=1)
         # rospy.Timer(rospy.Duration(0.1), self.Connect)
         rospy.Timer(rospy.Duration(0.1), self.pubCB)
         rospy.Timer(rospy.Duration(0.1), self.speakCB)
