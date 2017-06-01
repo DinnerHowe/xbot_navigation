@@ -13,12 +13,10 @@ This programm is tested on kuboki base turtlebot.
 import rospy
 from PlanAlgrithmsLib import AlgrithmsLib
 from PlanAlgrithmsLib import maplib
-import collections
 from geometry_msgs.msg import PointStamped
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Path
 from nav_msgs.msg import OccupancyGrid
-from threading import Lock
 import time
 from std_msgs.msg import ColorRGBA
 from geometry_msgs.msg import Point

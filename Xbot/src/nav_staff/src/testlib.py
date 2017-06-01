@@ -1,20 +1,33 @@
 #!/usr/bin/env python
 # coding=utf-8
 """
-test plan 算法库的测试程序
+test plan 算法库的测试程序库
 
 Copyright (c) 2017 Xu Zhihao (Howe).  All rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 
-This programm is tested on kuboki base turtlebot.
+This programm is tested on kuboki base turtlebot and xbot.
 
 """
+
 import rospy
 from std_msgs.msg import Bool
+from std_msgs.msg import String
+
+#switch modles
+class switch_modles_simulation():
+    def __init__(self):
+        rospy.Timer(rospy.Duration(0.1), self.switchCB)
+        rospy.spin()
+
+    def switchCB(self, event):
+        switcher = rospy.Publisher('/move_base/switch', String, queue_size=1)
+        string = raw_input('FixedModule / OnePathModule:')
+        switcher.publish(string)
 
 # speaker simulation
-class tester1():
+class speaker_simulation():
     def __init__(self):
         self.Connected = True
         self.speak = False
@@ -37,7 +50,6 @@ class tester1():
                 self.Connected = False
                 self.speak = False
 
-
     def speakCB(self,event):
         if self.Connected:
             if self.count > 50:
@@ -47,14 +59,3 @@ class tester1():
                 self.speak = False
                 self.count += 1
             print 'speaker sim:', self.count
-
-
-if __name__=='__main__':
-     rospy.init_node('Plan_tester_pub2')
-     try:
-         rospy.loginfo( "initialization system")
-         tester1()
-         rospy.loginfo("process done and quit" )
-     except rospy.ROSInterruptException:
-         rospy.loginfo("node terminated.")
-

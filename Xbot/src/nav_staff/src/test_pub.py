@@ -137,7 +137,7 @@ if __name__=='__main__':
      rospy.init_node('Plan_tester_pub')
      try:
          rospy.loginfo( "initialization system")
-         tester3()
+         tester1()
          rospy.loginfo("process done and quit" )
      except rospy.ROSInterruptException:
          rospy.loginfo("node terminated.")

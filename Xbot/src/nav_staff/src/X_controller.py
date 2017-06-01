@@ -114,10 +114,6 @@ class BaseController:
          rospy.set_param('~GoalTolerant', 0.01)
         self.GoalTolerant = rospy.get_param('~GoalTolerant')
 
-        # if not rospy.has_param('~times'):
-        #     rospy.set_param('~times', 1)
-        # self.times = rospy.get_param('~times')
-
         self.path = []
 
         self.period = rospy.Duration(self.PublishFrequency)
@@ -145,7 +141,6 @@ class BaseController:
                 rospy.loginfo('arrive goal')
                 self.cmd_vel = Twist()
             else:
-                # rospy.loginfo('go to goal...')
                 self.count_cmds(cur_pose, cur_goal)
 
     def count_cmds(self, cur_pose, cur_goal):
@@ -239,7 +234,6 @@ class BaseController:
             segment = [i.pose.position for i in self.path]
             if len(segment) >= 2:
                 Tasks = self.linear_analyse(segment)
-                # Tasks = Tasks * self.times
 
     def PlanOnceCB(self, PlanPath):
         global switcher

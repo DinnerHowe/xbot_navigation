@@ -29,7 +29,7 @@ from threading import Lock
 import collections
 from geometry_msgs.msg import Twist
 
-from xbot_msgs.msg import DockInfraRed
+# from xbot_msgs.msg import DockInfraRed
 from std_msgs.msg import String
 
 from tf2_msgs.msg import TFMessage
